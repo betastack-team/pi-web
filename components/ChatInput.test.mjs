@@ -460,6 +460,108 @@ test("picked files go to the chat's attach handler, or attach as images without 
   assert.deepEqual(pick(() => ({ onAttachFiles: undefined })), { attached: [], images: [[photo, report]], value: "" });
 });
 
+test("pasted images go to the chat attach handler and other files do not", () => {
+  const photo = new File(["x"], "photo.png", { type: "image/png" });
+  const report = new File(["x"], "report.pdf", { type: "application/pdf" });
+  const paste = (files, onAttachFiles) => {
+    const calls = { attached: [], images: [], prevented: 0 };
+    const items = files.map((file) => ({
+      kind: "file",
+      type: file.type,
+      getAsFile: () => file,
+    }));
+    chatInputCallback("handlePaste", {
+      compact: false,
+      onAttachFiles: onAttachFiles
+        ? (next) => { calls.attached.push([...next]); onAttachFiles(next); }
+        : undefined,
+      processImageFiles: (next) => calls.images.push([...next]),
+    })({
+      clipboardData: { items, getData: () => "" },
+      preventDefault: () => { calls.prevented += 1; },
+    });
+    return calls;
+  };
+
+  const routed = paste([photo, report], () => {});
+  assert.deepEqual(routed.attached, [[photo]]);
+  assert.deepEqual(routed.images, []);
+  assert.equal(routed.prevented, 1);
+
+  const inline = paste([photo, report], undefined);
+  assert.deepEqual(inline.attached, []);
+  assert.deepEqual(inline.images, [[photo]]);
+  assert.equal(inline.prevented, 1);
+
+  const pdfOnly = paste([report], () => {});
+  assert.deepEqual(pdfOnly.attached, []);
+  assert.deepEqual(pdfOnly.images, []);
+  assert.equal(pdfOnly.prevented, 0);
+});
+
+test("a pasted image uploads and HTML on the same clipboard still rewrites", () => {
+  const photo = new File(["x"], "photo.png", { type: "image/png" });
+  const report = new File(["x"], "report.pdf", { type: "application/pdf" });
+  const paste = (files) => {
+    const calls = { attached: [], images: [], value: "", prevented: 0 };
+    const items = files.map((file) => ({
+      kind: "file",
+      type: file.type,
+      getAsFile: () => file,
+    }));
+    chatInputCallback("handlePaste", {
+      compact: false,
+      onAttachFiles: (next) => { calls.attached.push([...next]); },
+      processImageFiles: () => { throw new Error("image paste took the inline path"); },
+      DOMParser: class {
+        parseFromString() {
+          const link = {
+            textContent: "Engineer",
+            getAttribute: (name) => (name === "href" ? "https://example.com/1" : null),
+          };
+          return {
+            body: {},
+            querySelectorAll: () => [link],
+            createRange() {
+              return { setStart() {}, setEndBefore() {}, toString: () => "" };
+            },
+          };
+        }
+      },
+      replaceLinksWithMarkdown,
+      valueRef: { current: "" },
+      setValue(next) { calls.value = next; },
+      setHistoryMenuOpen() {},
+      updateAtQuery() {},
+      requestAnimationFrame(callback) { callback(); },
+    })({
+      clipboardData: {
+        items,
+        getData: (type) => (type === "text/html" ? "<a href=\"https://example.com/1\">Engineer</a>" : "Engineer"),
+      },
+      preventDefault: () => { calls.prevented += 1; },
+      currentTarget: {
+        value: "",
+        selectionStart: 0,
+        selectionEnd: 0,
+        focus() {},
+        setSelectionRange() {},
+      },
+    });
+    return calls;
+  };
+
+  const mixed = paste([photo, report]);
+  assert.deepEqual(mixed.attached, [[photo]]);
+  assert.equal(mixed.value, "[Engineer](https://example.com/1)");
+  assert.equal(mixed.prevented, 1);
+
+  const pdf = paste([report]);
+  assert.deepEqual(pdf.attached, []);
+  assert.equal(pdf.value, "[Engineer](https://example.com/1)");
+  assert.equal(pdf.prevented, 1);
+});
+
 test("shows and locks the optimistic model while a switch is pending", () => {
   const html = renderToStaticMarkup(
     React.createElement(
@@ -770,7 +872,7 @@ test("handleSend lets a handled /mcp through while streaming and sends an unowne
   assert.deepEqual(await run("/mcp login", { isStreaming: true, handled: false }), { builtin: [], sent: [] });
 });
 
-test("restores text and base64 images when editing a user message", () => {
+test("editing a user message restores text and drops historical images", () => {
   const message = {
     role: "user",
     content: [
@@ -780,12 +882,10 @@ test("restores text and base64 images when editing a user message", () => {
   };
 
   assert.equal(getUserMessageText(message), "Review this image @src/example.ts ");
-  assert.deepEqual(getUserMessageDraftImages(message), [
-    { data: "AQID", mimeType: "image/png" },
-  ]);
+  assert.deepEqual(getUserMessageDraftImages(message), []);
 });
 
-test("restores legacy flat image entries when editing a user message", () => {
+test("editing a user message drops legacy flat image entries", () => {
   const message = {
     role: "user",
     content: [
@@ -793,9 +893,7 @@ test("restores legacy flat image entries when editing a user message", () => {
     ],
   };
 
-  assert.deepEqual(getUserMessageDraftImages(message), [
-    { data: "AQID", mimeType: "image/jpeg" },
-  ]);
+  assert.deepEqual(getUserMessageDraftImages(message), []);
 });
 
 test("does not restore a historical message over a pending image attachment", () => {

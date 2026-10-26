@@ -510,20 +510,10 @@ export function getUserMessageText(message: UserMessage): string {
     .join("\n");
 }
 
-export function getUserMessageDraftImages(message: UserMessage): ChatDraftImage[] {
-  if (typeof message.content === "string") return [];
-  return message.content.flatMap((block) => {
-    if (block.type !== "image") return [];
-
-    // Support both the current nested image format and older flat pi-ai entries.
-    const flat = block as unknown as { data?: unknown; mimeType?: unknown };
-    const data = block.source?.type === "base64" ? block.source.data : flat.data;
-    const mimeType = block.source?.type === "base64" ? block.source.media_type : flat.mimeType;
-    if (typeof data !== "string" || typeof mimeType !== "string") return [];
-
-    const image = { data, mimeType };
-    return isBase64ImageWithinLimits(image) ? [image] : [];
-  });
+// Edit-from-here refills this draft, and handleSend ships whatever is in it.
+// Historical image blocks stay on the transcript. They are not sent again.
+export function getUserMessageDraftImages(_message: UserMessage): ChatDraftImage[] {
+  return [];
 }
 
 function revokeImagePreview(image: AttachedImage): void {
@@ -1535,17 +1525,35 @@ export const ChatInput = memo(forwardRef<ChatInputHandle, Props>(function ChatIn
 
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = Array.from(e.clipboardData?.items ?? []);
-    const imageItems = items.filter((item) => item.type.startsWith("image/"));
-    if (!compact && imageItems.length) {
-      e.preventDefault();
-      const files = imageItems.map((item) => item.getAsFile()).filter((f): f is File => f !== null);
-      processImageFiles(files);
-      return;
+    // Only image files upload from a paste. Other files keep the text path below.
+    let imagesUploaded = false;
+    if (!compact && onAttachFiles) {
+      const imageFiles = items
+        .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null);
+      if (imageFiles.length > 0) {
+        onAttachFiles(imageFiles);
+        imagesUploaded = true;
+      }
+    }
+    if (!imagesUploaded) {
+      const imageItems = items.filter((item) => item.type.startsWith("image/"));
+      if (!compact && imageItems.length) {
+        e.preventDefault();
+        const files = imageItems.map((item) => item.getAsFile()).filter((f): f is File => f !== null);
+        processImageFiles(files);
+        return;
+      }
     }
 
     const html = e.clipboardData.getData("text/html");
     const text = e.clipboardData.getData("text/plain");
-    if (!html || !text) return;
+    // No text to keep, so the image does not also land in the textarea.
+    if (!html || !text) {
+      if (imagesUploaded) e.preventDefault();
+      return;
+    }
     const document = new DOMParser().parseFromString(html, "text/html");
     const links = Array.from(document.querySelectorAll("a[href]"), (link) => {
       const label = link.textContent ?? "";
@@ -1573,7 +1581,7 @@ export const ChatInput = memo(forwardRef<ChatInputHandle, Props>(function ChatIn
       ta.focus();
       ta.setSelectionRange(start + markdown.length, start + markdown.length);
     });
-  }, [compact, processImageFiles, updateAtQuery]);
+  }, [compact, onAttachFiles, processImageFiles, updateAtQuery]);
 
   useEffect(() => {
     if (slashQuery === null) {

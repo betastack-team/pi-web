@@ -65,9 +65,9 @@ export function uploadFiles(
 export type DroppedItem = { kind: "file"; file: File } | { kind: "folder"; name: string };
 
 /**
- * Sorts a chat drop: images are attached to the prompt as before, other files
- * are uploaded into the working directory and mentioned, and folders are left
- * out because the upload endpoint takes files only.
+ * Sorts a chat drop. Image files upload with the other files. The images
+ * list stays empty so a drop never attaches a picture to the prompt. Folders
+ * stay out because the upload endpoint takes files only.
  * @param items The dropped items, in drop order
  * @returns The images, the files to upload, and the names of skipped folders
  */
@@ -77,7 +77,6 @@ export function splitDroppedItems(items: DroppedItem[]): { images: File[]; files
   const folders: string[] = [];
   for (const item of items) {
     if (item.kind === "folder") folders.push(item.name);
-    else if (item.file.type.startsWith("image/")) images.push(item.file);
     else files.push(item.file);
   }
   return { images, files, folders };

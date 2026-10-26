@@ -59,27 +59,33 @@ async function attach(files, { cwd = "/project", response } = {}) {
 
 test("the attach button sends picked files down the chat drop path (#1101)", async () => {
   const mixed = await attach([photo, report, log], {
-    response: { status: 207, data: { uploaded: ["report.pdf"], skipped: ["server.log"] } },
+    response: { status: 207, data: { uploaded: ["photo.png", "report.pdf"], skipped: ["server.log"] } },
   });
-  // Images attach to the prompt; the rest are uploaded like a drop: never replacing a file, then mentioned.
-  assert.deepEqual(mixed.images, [photo]);
-  assert.deepEqual(mixed.uploads, [["/project", ["report.pdf", "server.log"], "skip"]]);
-  assert.deepEqual(mixed.mentions, ["@report.pdf @server.log "]);
+  // Images upload with the other files. They are not attached to the prompt.
+  assert.deepEqual(mixed.images, []);
+  assert.deepEqual(mixed.uploads, [["/project", ["photo.png", "report.pdf", "server.log"], "skip"]]);
+  assert.deepEqual(mixed.mentions, ["@photo.png @report.pdf @server.log "]);
   assert.deepEqual(mixed.notices, [
-    ["success", 'chat.dropUploaded {"count":1}'],
+    ["success", 'chat.dropUploaded {"count":2}'],
     ["warning", 'chat.dropAlreadyExists {"names":"server.log"}'],
   ]);
   assert.equal(mixed.refreshed, 1);
 
-  const imagesOnly = await attach([photo]);
-  assert.deepEqual(imagesOnly.images, [photo]);
-  assert.deepEqual(imagesOnly.uploads, []);
-  assert.deepEqual(imagesOnly.notices, []);
+  const imagesOnly = await attach([photo], {
+    response: { status: 200, data: { uploaded: ["photo.png"] } },
+  });
+  assert.deepEqual(imagesOnly.images, []);
+  assert.deepEqual(imagesOnly.uploads, [["/project", ["photo.png"], "skip"]]);
+  assert.deepEqual(imagesOnly.mentions, ["@photo.png "]);
+  assert.deepEqual(imagesOnly.notices, [
+    ["success", 'chat.dropUploaded {"count":1}'],
+  ]);
+  assert.equal(imagesOnly.refreshed, 1);
 });
 
 test("without a working directory, picked files behave like a drop there (#1101)", async () => {
   const calls = await attach([photo, report], { cwd: null });
-  assert.deepEqual(calls.images, [photo]);
+  assert.deepEqual(calls.images, []);
   assert.deepEqual(calls.uploads, []);
   assert.deepEqual(calls.notices, [["warning", "chat.dropNeedsCwd"]]);
 });
