@@ -112,6 +112,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+type AgentEventTransform = (event: AgentEventLike) => AgentEventLike | null;
+
 /**
  * Open the SSE transport immediately, then publish the session snapshot only
  * after the agent is ready and its event listener has been installed.
@@ -120,6 +122,9 @@ export function createAgentEventStream(
   req: Request,
   sessionId: string,
   sessionPromise: Promise<AgentEventStreamSession>,
+  resolveTransform?: (
+    session: AgentEventStreamSession,
+  ) => AgentEventTransform | undefined | Promise<AgentEventTransform | undefined>,
 ): ReadableStream<Uint8Array> {
   let cancelStream: (closeController: boolean | "error") => void = () => {};
 
@@ -215,10 +220,14 @@ export function createAgentEventStream(
         }
         encode(clientEvent, { droppable: isDroppableEvent(clientEvent) });
       };
+      let transformEvent: AgentEventTransform | undefined;
       const forwardEvent = (event: AgentEventLike, snapshot: unknown) => {
         if (isEventIncludedInSnapshot(event, snapshot)) return;
-        const clientEvent = toClientAgentEvent(event);
-        if (clientEvent) sendClientEvent(clientEvent);
+        const projected = toClientAgentEvent(event);
+        if (!projected) return;
+        const clientEvent = transformEvent ? transformEvent(projected) : projected;
+        if (!clientEvent) return;
+        sendClientEvent(clientEvent);
       };
 
       const publishSession = async () => {
@@ -228,6 +237,18 @@ export function createAgentEventStream(
           if (session.isAlive && !session.isAlive()) {
             cleanup(true);
             return;
+          }
+
+          // onEvent replays held events into the buffer, then the snapshot is
+          // published. Resolve first so none of those go out untransformed.
+          // A resolver failure leaves the stream open with no transform.
+          if (resolveTransform) {
+            try {
+              transformEvent = (await resolveTransform(session)) ?? undefined;
+            } catch {
+              transformEvent = undefined;
+            }
+            if (closed) return;
           }
 
           const bufferedEvents: AgentEventLike[] = [];

@@ -21,6 +21,7 @@ import { readSessionToolSelection } from "@/lib/session-tool-selection";
 import { jsonResponse } from "@/lib/json-response";
 import { deleteSessions } from "@/lib/session-delete";
 import { attachTranscriptNotices, readSessionTranscriptNotices } from "@/lib/transcript-notices-server";
+import { displayForCwd } from "@/lib/owc-display";
 
 export async function GET(
   req: Request,
@@ -72,12 +73,13 @@ export async function GET(
       leafId: leafId,
       models: liveRpc?.inner.modelRuntime,
     });
-    const context = attachTranscriptNotices(buildSessionContext(entries as never, leafId, {
+    const display = await displayForCwd(sm.getHeader()?.cwd ?? "");
+    const context = display.presentContext(attachTranscriptNotices(buildSessionContext(entries as never, leafId, {
       deferThinking,
       deferToolResultImages,
       tail,
       sessionId: id, // local: lazy URLs for historical tool-result images
-    }), transcriptNotices);
+    }), transcriptNotices));
     perf?.span("context");
     const totalActiveMs = computeSessionTotalActiveMs(entries);
     // Cumulative usage over ALL entries, including history compacted away —
@@ -121,10 +123,10 @@ export async function GET(
       modified,
       messageCount: stats.totalMessages,
       firstMessage: firstUserMessage
-        ? (() => {
+        ? display.presentText((() => {
             const c = (firstUserMessage as { content: unknown }).content;
             return typeof c === "string" ? c : (Array.isArray(c) ? (c.find((b: { type: string }) => b.type === "text") as { text: string } | undefined)?.text ?? "" : "") || "(no messages)";
-          })()
+          })())
         : "(no messages)",
       parentSessionId,
       ...(subagent

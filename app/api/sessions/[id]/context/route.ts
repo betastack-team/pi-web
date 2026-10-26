@@ -3,6 +3,7 @@ import { resolveSessionPath, openSessionManager, buildSessionContext } from "@/l
 import { getRpcSession } from "@/lib/rpc-manager";
 import { attachTranscriptNotices, readSessionTranscriptNotices } from "@/lib/transcript-notices-server";
 import type { SessionEntry } from "@/lib/types";
+import { displayForCwd } from "@/lib/owc-display";
 
 export async function GET(
   req: Request,
@@ -38,13 +39,14 @@ export async function GET(
       leafId: leafId ?? sm.getLeafId(),
       models: liveRpc?.inner.modelRuntime,
     });
-    const context = attachTranscriptNotices(buildSessionContext(entries as never, before ?? leafId, {
+    const display = await displayForCwd(sm.getHeader()?.cwd ?? "");
+    const context = display.presentContext(attachTranscriptNotices(buildSessionContext(entries as never, before ?? leafId, {
       deferThinking,
       deferToolResultImages,
       tail,
       excludeLeaf: Boolean(before),
       sessionId: id,
-    }), transcriptNotices);
+    }), transcriptNotices));
 
     return NextResponse.json({ context, tail, before: before ?? null });
   } catch (error) {

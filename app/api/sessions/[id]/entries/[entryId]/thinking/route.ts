@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSessionEntries, resolveSessionPath } from "@/lib/session-reader";
+import { getSessionEntries, readSessionHeader, resolveSessionPath } from "@/lib/session-reader";
+import { displayForCwd } from "@/lib/owc-display";
 
 export async function GET(
   req: Request,
@@ -27,7 +28,13 @@ export async function GET(
       return NextResponse.json({ error: "Thinking block not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ thinking: block.thinking });
+    const display = await displayForCwd(readSessionHeader(filePath)?.cwd);
+    const pair = display.presentTextPair(block.thinking);
+    return NextResponse.json(
+      pair.rawText === undefined
+        ? { thinking: pair.text }
+        : { thinking: pair.text, rawThinking: pair.rawText },
+    );
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
