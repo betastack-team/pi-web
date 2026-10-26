@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useRef, useEffect, useMemo, type CSSProperties } from "react";
+import { memo, useCallback, useState, useRef, useEffect, useMemo, type CSSProperties } from "react";
 import ReactMarkdown from "react-markdown";
 import { MarkdownBody } from "./MarkdownBody";
 import { ImagePreview } from "./ImagePreview";
@@ -22,6 +22,7 @@ import { skillExpansionToCommand } from "@/lib/slash-display";
 import type { SubagentToolDetails } from "@/lib/subagent-extension";
 import { CODEMODE_TOOL_NAME, codemodeCalls, codemodeScript, codemodeScriptPreview, stripCodemodeHeader } from "@/lib/codemode-view";
 import { CodemodeCallList } from "./CodemodeToolView";
+import { modelViewBody } from "@/lib/owc-model-view";
 import { toolFieldsOfInput, type ToolField } from "@/lib/tool-fields";
 import { mcpToolLabel, prettyMcpResultText } from "@/lib/mcp-tool-display";
 import { streamRateKey, streamRateStart, streamTokensPerSecond, type StreamRateStart } from "@/lib/stream-token-rate";
@@ -93,7 +94,13 @@ function estimateUpdatedTokens(previous: TokenEstimateCacheEntry | undefined, te
 }
 
 const MAX_THINKING_CACHE_ENTRIES = 100;
-const thinkingContentCache = new Map<string, Promise<string>>();
+
+interface LoadedThinking {
+  thinking: string;
+  rawThinking?: string;
+}
+
+const thinkingContentCache = new Map<string, Promise<LoadedThinking>>();
 
 // Messages larger than this skip markdown rendering entirely. react-markdown +
 // KaTeX + syntax highlighting on multi-hundred-KB payloads (e.g. pasted HAR or
@@ -161,7 +168,7 @@ function SafeMarkdownBody({ children, className, ...props }: React.ComponentProp
 // push the conversation off screen; overflow scrolls inside the bubble.
 const USER_BUBBLE_MAX_HEIGHT = 300;
 
-function loadThinkingContent(sessionId: string, entryId: string, blockIndex: number): Promise<string> {
+function loadThinkingContent(sessionId: string, entryId: string, blockIndex: number): Promise<LoadedThinking> {
   const key = `${sessionId}:${entryId}:${blockIndex}`;
   const cached = thinkingContentCache.get(key);
   if (cached) {
@@ -174,9 +181,11 @@ function loadThinkingContent(sessionId: string, entryId: string, blockIndex: num
     `/api/sessions/${encodeURIComponent(sessionId)}/entries/${encodeURIComponent(entryId)}/thinking?blockIndex=${blockIndex}`,
   ).then(async (response) => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json() as { thinking?: unknown };
+    const data = await response.json() as { thinking?: unknown; rawThinking?: unknown };
     if (typeof data.thinking !== "string") throw new Error("Invalid thinking response");
-    return data.thinking;
+    return typeof data.rawThinking === "string"
+      ? { thinking: data.thinking, rawThinking: data.rawThinking }
+      : { thinking: data.thinking };
   }).catch((error) => {
     thinkingContentCache.delete(key);
     throw error;
@@ -220,6 +229,55 @@ interface Props {
   onCompact?: () => void;
   isCompacting?: boolean;
   compactError?: string | null;
+  /** When true, every model-view disclosure on this message is forced open. */
+  modelViewOpen?: boolean;
+}
+
+/**
+ * The header toggle forces the disclosure open. A click while that toggle is on
+ * cannot stick, because the handler writes `open` back. That forced open is
+ * not stored, so turning the header toggle off restores each message's own state.
+ */
+function ModelViewDisclosure({ body, forcedOpen }: { body: string; forcedOpen: boolean }) {
+  const [localOpen, setLocalOpen] = useState(false);
+  return (
+    <details
+      open={forcedOpen || localOpen}
+      onToggle={(event) => {
+        if (forcedOpen) {
+          if (!event.currentTarget.open) event.currentTarget.open = true;
+          return;
+        }
+        setLocalOpen(event.currentTarget.open);
+      }}
+      style={{ marginTop: 6, maxWidth: "100%" }}
+    >
+      <summary
+        style={{
+          cursor: "pointer",
+          color: "var(--text-muted)",
+          fontFamily: "var(--font-mono)",
+          fontSize: "calc(11px + var(--chat-font-size-offset, 0px))",
+        }}
+      >
+        Model view — exactly as sent (tokenized)
+      </summary>
+      <pre
+        style={{
+          margin: "4px 0 0",
+          padding: "8px 10px",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          fontFamily: "var(--font-mono)",
+          color: "var(--text-muted)",
+          fontSize: "calc(12px + var(--chat-font-size-offset, 0px))",
+          lineHeight: 1.5,
+        }}
+      >
+        {body}
+      </pre>
+    </details>
+  );
 }
 
 export function getModelDisplayName(
@@ -287,12 +345,12 @@ function haveSameRelevantToolResults(
   return true;
 }
 
-export const MessageView = memo(function MessageView({ message, isStreaming, toolResults, modelNames, cwd, onOpenFile, onOpenSubagent, entryId, searchBlock, onFork, forking, onEditContent, onCancelEdit, isEditing, showTimestamp, prevTimestamp, sessionId, writtenFiles, turnDurationMs, onCompact, isCompacting, compactError }: Props) {
+export const MessageView = memo(function MessageView({ message, isStreaming, toolResults, modelNames, cwd, onOpenFile, onOpenSubagent, entryId, searchBlock, onFork, forking, onEditContent, onCancelEdit, isEditing, showTimestamp, prevTimestamp, sessionId, writtenFiles, turnDurationMs, onCompact, isCompacting, compactError, modelViewOpen }: Props) {
   if (message.role === "user") {
-    return <UserMessageView message={message as UserMessage} cwd={cwd} onOpenFile={onOpenFile} entryId={entryId} onFork={onFork} forking={forking} onEditContent={onEditContent} onCancelEdit={onCancelEdit} isEditing={isEditing} />;
+    return <UserMessageView message={message as UserMessage} cwd={cwd} onOpenFile={onOpenFile} entryId={entryId} onFork={onFork} forking={forking} onEditContent={onEditContent} onCancelEdit={onCancelEdit} isEditing={isEditing} modelViewOpen={modelViewOpen} />;
   }
   if (message.role === "assistant") {
-    return <AssistantMessageView message={message as AssistantMessage} isStreaming={isStreaming} toolResults={toolResults} modelNames={modelNames} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} showTimestamp={showTimestamp} prevTimestamp={prevTimestamp} sessionId={sessionId} entryId={entryId} searchBlock={searchBlock} writtenFiles={writtenFiles} turnDurationMs={turnDurationMs} onCompact={onCompact} isCompacting={isCompacting} compactError={compactError} />;
+    return <AssistantMessageView message={message as AssistantMessage} isStreaming={isStreaming} toolResults={toolResults} modelNames={modelNames} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} showTimestamp={showTimestamp} prevTimestamp={prevTimestamp} sessionId={sessionId} entryId={entryId} searchBlock={searchBlock} writtenFiles={writtenFiles} turnDurationMs={turnDurationMs} onCompact={onCompact} isCompacting={isCompacting} compactError={compactError} modelViewOpen={modelViewOpen} />;
   }
   if (message.role === "toolResult") {
     // Rendered inline under its toolCall — skip standalone rendering if paired
@@ -300,9 +358,9 @@ export const MessageView = memo(function MessageView({ message, isStreaming, too
   }
   if (message.role === "custom") {
     if ((message as CustomMessage).customType === "compaction") {
-      return <CompactionMessageView message={message as CustomMessage} />;
+      return <CompactionMessageView message={message as CustomMessage} modelViewOpen={modelViewOpen} />;
     }
-    return <CustomMessageView message={message as CustomMessage} cwd={cwd} onOpenFile={onOpenFile} />;
+    return <CustomMessageView message={message as CustomMessage} cwd={cwd} onOpenFile={onOpenFile} modelViewOpen={modelViewOpen} />;
   }
   if (message.role === "bashExecution") {
     return <BashExecutionView message={message as BashExecutionMessage} sessionId={sessionId} />;
@@ -330,10 +388,11 @@ export const MessageView = memo(function MessageView({ message, isStreaming, too
     && prev.sessionId === next.sessionId
     && prev.onCompact === next.onCompact
     && prev.isCompacting === next.isCompacting
-    && prev.compactError === next.compactError;
+    && prev.compactError === next.compactError
+    && prev.modelViewOpen === next.modelViewOpen;
 });
 
-function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, onEditContent, onCancelEdit, isEditing }: {
+function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, onEditContent, onCancelEdit, isEditing, modelViewOpen }: {
   message: UserMessage;
   cwd?: string;
   onOpenFile?: (filePath: string, page?: number) => void;
@@ -343,6 +402,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
   onEditContent?: (message: UserMessage, entryId: string) => void;
   onCancelEdit?: () => void;
   isEditing?: boolean;
+  modelViewOpen?: boolean;
 }) {
   const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
@@ -408,6 +468,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
   );
   const canEdit = !!entryId && !!onEditContent;
   const canCancelEdit = !!isEditing && !!onCancelEdit;
+  const modelBody = modelViewBody(message);
 
   const copyContent = () => {
     copyText(copyTarget).then(() => {
@@ -508,6 +569,12 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
         </div>
 
       </div>
+
+      {modelBody !== null && (
+        <div style={{ maxWidth: "85%", alignSelf: "flex-end" }}>
+          <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />
+        </div>
+      )}
 
       {/* Bottom row: action buttons + timestamp */}
       {(time || canFork || canEdit || true) && (
@@ -661,6 +728,7 @@ function AssistantMessageView({
   onCompact,
   isCompacting,
   compactError,
+  modelViewOpen,
 }: {
   message: AssistantMessage;
   isStreaming?: boolean;
@@ -679,6 +747,7 @@ function AssistantMessageView({
   onCompact?: () => void;
   isCompacting?: boolean;
   compactError?: string | null;
+  modelViewOpen?: boolean;
 }) {
   const { t } = useI18n();
   const time = showTimestamp ? formatTime(message.timestamp) : null;
@@ -691,6 +760,20 @@ function AssistantMessageView({
   const unansweredTruncation = truncated && !hasAssistantAnswer(message);
   const [hovered, setHovered] = useState(false);
   const [copied, setCopied] = useState(false);
+  const thinkingScope = `${sessionId ?? ""}:${entryId ?? ""}`;
+  const [deferredRawThinking, setDeferredRawThinking] = useState<{ scope: string; byBlock: Map<number, string> }>({
+    scope: "",
+    byBlock: new Map(),
+  });
+  const extraRawThinking = deferredRawThinking.scope === thinkingScope ? deferredRawThinking.byBlock : undefined;
+  const rememberRawThinking = useCallback((blockIndex: number, rawThinking: string) => {
+    setDeferredRawThinking((prev) => {
+      const byBlock = prev.scope === thinkingScope ? new Map(prev.byBlock) : new Map<number, string>();
+      if (prev.scope === thinkingScope && byBlock.get(blockIndex) === rawThinking) return prev;
+      byBlock.set(blockIndex, rawThinking);
+      return { scope: thinkingScope, byBlock };
+    });
+  }, [thinkingScope]);
   const streamStartRef = useRef<StreamRateStart | null>(null);
   const rateKey = streamRateKey(message);
   const streamRateKeyRef = useRef(rateKey);
@@ -811,7 +894,8 @@ function AssistantMessageView({
     return () => clearInterval(id);
   }, [isStreaming]);
 
-  if (blocks.length === 0 && !isStreaming && !providerError && !truncated) return null;
+  const modelBody = modelViewBody(message, toolResults, extraRawThinking);
+  if (blocks.length === 0 && !isStreaming && !providerError && !truncated && modelBody === null) return null;
 
   return (
     <div
@@ -867,9 +951,10 @@ function AssistantMessageView({
         {/* Not keyed by the entry id: a message of this run gets one when the file is
             read again, and its blocks keep their state across that read (#1184). */}
         {blockItems.map(({ block, originalIndex }) => (
-          <BlockView key={originalIndex} block={block} searchTarget={block === searchBlock} toolResults={toolResults} isStreaming={isStreaming} streamingDuration={streamingDurations.get(originalIndex) ?? (block.type === "thinking" ? thinkingDurationFromFile : undefined)} toolCallDurations={toolCallDurations} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} sessionId={sessionId} entryId={entryId} blockIndex={originalIndex} />
+          <BlockView key={originalIndex} block={block} searchTarget={block === searchBlock} toolResults={toolResults} isStreaming={isStreaming} streamingDuration={streamingDurations.get(originalIndex) ?? (block.type === "thinking" ? thinkingDurationFromFile : undefined)} toolCallDurations={toolCallDurations} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} sessionId={sessionId} entryId={entryId} blockIndex={originalIndex} onDeferredRawThinking={rememberRawThinking} />
         ))}
       </div>
+      {modelBody !== null && <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />}
 
       {providerError && (
         <div
@@ -992,12 +1077,12 @@ function AssistantMessageView({
   );
 }
 
-function BlockView({ block, searchTarget, toolResults, isStreaming, streamingDuration, toolCallDurations, cwd, onOpenFile, onOpenSubagent, sessionId, entryId, blockIndex }: { block: AssistantContentBlock; searchTarget?: boolean; toolResults?: Map<string, ToolResultMessage>; isStreaming?: boolean; streamingDuration?: number; toolCallDurations?: Map<string, number>; cwd?: string; onOpenFile?: (filePath: string, page?: number) => void; onOpenSubagent?: (sessionId: string, label: string) => void; sessionId?: string; entryId?: string; blockIndex: number }) {
+function BlockView({ block, searchTarget, toolResults, isStreaming, streamingDuration, toolCallDurations, cwd, onOpenFile, onOpenSubagent, sessionId, entryId, blockIndex, onDeferredRawThinking }: { block: AssistantContentBlock; searchTarget?: boolean; toolResults?: Map<string, ToolResultMessage>; isStreaming?: boolean; streamingDuration?: number; toolCallDurations?: Map<string, number>; cwd?: string; onOpenFile?: (filePath: string, page?: number) => void; onOpenSubagent?: (sessionId: string, label: string) => void; sessionId?: string; entryId?: string; blockIndex: number; onDeferredRawThinking?: (blockIndex: number, rawThinking: string) => void }) {
   if (block.type === "text") {
     return <div data-message-text data-search-target={searchTarget || undefined}><TextBlock block={block as TextContent} isStreaming={isStreaming} cwd={cwd} onOpenFile={onOpenFile} /></div>;
   }
   if (block.type === "thinking") {
-    return <ThinkingBlock block={block as ThinkingContent} duration={streamingDuration} sessionId={sessionId} entryId={entryId} blockIndex={blockIndex} />;
+    return <ThinkingBlock block={block as ThinkingContent} duration={streamingDuration} sessionId={sessionId} entryId={entryId} blockIndex={blockIndex} onDeferredRawThinking={onDeferredRawThinking} />;
   }
   if (block.type === "toolCall") {
     const tc = block as ToolCallContent;
@@ -1025,12 +1110,13 @@ function ThinkingText({ text }: { text: string }) {
   return pieces.map((piece, index) => <div key={index}>{piece.text}</div>);
 }
 
-export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex }: {
+export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex, onDeferredRawThinking }: {
   block: ThinkingContent;
   duration?: number;
   sessionId?: string;
   entryId?: string;
   blockIndex: number;
+  onDeferredRawThinking?: (blockIndex: number, rawThinking: string) => void;
 }) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(isThinkingExpandedByDefault);
@@ -1074,7 +1160,8 @@ export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex 
     loadThinkingContent(sessionId, entryId, blockIndex)
       .then((value) => {
         if (!cancelled) {
-          setContent(value);
+          setContent(value.thinking);
+          if (value.rawThinking !== undefined) onDeferredRawThinking?.(blockIndex, value.rawThinking);
           setLoading(false);
         }
       })
@@ -1798,7 +1885,7 @@ function PairedResult({ text, isEmpty, isError }: {
   );
 }
 
-function CompactionMessageView({ message }: { message: CustomMessage }) {
+function CompactionMessageView({ message, modelViewOpen }: { message: CustomMessage; modelViewOpen?: boolean }) {
   const { t } = useI18n();
   // Collapsed by default, as in pi's TUI: a summary can run to pages.
   const [expanded, setExpanded] = useState(false);
@@ -1807,6 +1894,7 @@ function CompactionMessageView({ message }: { message: CustomMessage }) {
   const tokensBefore = (message.details as { tokensBefore?: unknown } | undefined)?.tokensBefore;
   // pi's showCacheMissNotices (#1265): what the compaction billed, in its card.
   const costNotice = getTranscriptNotices(message).find((notice) => notice.kind === "summary_cost" && notice.source === "compaction");
+  const modelBody = modelViewBody(message);
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -1877,6 +1965,7 @@ function CompactionMessageView({ message }: { message: CustomMessage }) {
           {expanded && <CompactionSummaryDetails summary={summary} />}
         </div>
       </div>
+      {modelBody !== null && <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />}
     </div>
   );
 }
@@ -1931,7 +2020,7 @@ function CompactionFileList({ title, files }: { title: string; files: string[] }
   );
 }
 
-function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessage; cwd?: string; onOpenFile?: (filePath: string, page?: number) => void }) {
+function CustomMessageView({ message, cwd, onOpenFile, modelViewOpen }: { message: CustomMessage; cwd?: string; onOpenFile?: (filePath: string, page?: number) => void; modelViewOpen?: boolean }) {
   const { t } = useI18n();
   // Expanded by default: pi's TUI always draws a displayed custom message in full.
   const [contentExpanded, setContentExpanded] = useState(true);
@@ -1943,6 +2032,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
   const detailsText = hasDetails ? safeJson(message.details) : "";
   const title = formatCustomType(message.customType);
   const time = formatTime(message.timestamp);
+  const modelBody = modelViewBody(message);
 
   const copyContent = () => {
     copyText(text || detailsText).then(() => {
@@ -2098,6 +2188,7 @@ function CustomMessageView({ message, cwd, onOpenFile }: { message: CustomMessag
           </>
         )}
       </div>
+      {modelBody !== null && <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />}
     </div>
   );
 }

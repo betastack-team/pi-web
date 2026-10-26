@@ -19,6 +19,8 @@ export interface SessionEntryBase {
 export interface TextContent {
   type: "text";
   text: string;
+  /** Tokenized text when it differs from the display `text`. */
+  rawText?: string;
 }
 
 export interface ImageContent {
@@ -34,6 +36,8 @@ export interface ImageContent {
 export interface ThinkingContent {
   type: "thinking";
   thinking: string;
+  /** Tokenized reasoning when it differs from the display `thinking`. */
+  rawThinking?: string;
   /** Historical content is a short preview; full reasoning is loaded on demand. */
   deferred?: boolean;
 }
@@ -43,6 +47,8 @@ export interface ToolCallContent {
   toolCallId: string;
   toolName: string;
   input: Record<string, unknown>;
+  /** Tokenized arguments when they differ from the display `input`. */
+  modelInput?: Record<string, unknown>;
   /** Client-only buffer for streamed tool input. Never persisted to session files. */
   rawInput?: string;
 }
@@ -52,6 +58,8 @@ export type AssistantContentBlock = TextContent | ImageContent | ThinkingContent
 export interface UserMessage {
   role: "user";
   content: string | (TextContent | ImageContent)[];
+  /** Tokenized source for string content when it differs from the display text. */
+  rawContent?: string;
   timestamp?: number;
 }
 
@@ -100,6 +108,8 @@ export interface CustomMessage {
   role: "custom";
   customType: string;
   content: string | (TextContent | ImageContent)[];
+  /** Tokenized source for string content when it differs from the display text. */
+  rawContent?: string;
   display: boolean;
   details?: unknown;
   timestamp?: number;
@@ -127,6 +137,8 @@ export type AgentMessage = UserMessage | AssistantMessage | ToolResultMessage | 
 export interface SystemMessage {
   role: "system";
   content: string | TextContent[];
+  /** Tokenized source for string content when it differs from the display text. */
+  rawContent?: string;
   sections?: Record<string, string | null>;
   toolsAdded?: unknown[];
   toolsRemoved?: Array<{ name: string }>;

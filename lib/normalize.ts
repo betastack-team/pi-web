@@ -34,6 +34,7 @@ function normalizeToolCallBlock(
         ? block.arguments as Record<string, unknown>
         : {}),
   };
+  if (isObject(block.modelInput)) normalized.modelInput = block.modelInput;
   const rawInput = options.includeStreamingRawInput ? streamingRawInput(block) : undefined;
   return rawInput === undefined ? normalized : { ...normalized, rawInput };
 }

@@ -275,6 +275,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
     return position && !position.atBottom ? position : null;
   });
   const [restoreAnchorReady, setRestoreAnchorReady] = useState(false);
+  const [modelViewOpen, setModelViewOpen] = useState(false);
 
   const {
     loading, error, messages, activeToolResults, entryIds, messageKeys, historyCursor, hasEarlierMessages, earlierTurnCount, streamingStore,
@@ -759,10 +760,10 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
   }, [ctxKey, onContextUsageChange]);
   useEffect(() => () => { onContextUsageChange?.(null); }, [onContextUsageChange]);
 
-  // Images attach to the prompt. Other files go through the file explorer's
-  // upload into the working directory, never replacing a file already there,
-  // and come back as @mentions. The composer's attach button takes the same
-  // path, for phones that cannot drop files.
+  // Files, including images, upload into the working directory and reach the
+  // model only through file tools. Nothing replaces a file already there, and
+  // uploaded names come back as @mentions. The composer's attach button takes
+  // the same path, for phones that cannot drop files.
   const uploadDroppedFiles = useCallback(async (files: File[]) => {
     const cwd = session?.cwd ?? newSessionCwd;
     if (!cwd) {
@@ -1072,6 +1073,28 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
           pointerEvents: "none",
         }}
       >
+        {!isEmptyNew && (
+          <button
+            type="button"
+            aria-pressed={modelViewOpen}
+            onClick={() => setModelViewOpen((open) => !open)}
+            style={{
+              pointerEvents: "auto",
+              marginRight: "auto",
+              padding: "3px 8px",
+              height: 22,
+              border: "1px solid var(--border)",
+              borderRadius: 5,
+              background: modelViewOpen ? "var(--bg-hover)" : "var(--bg)",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: 11,
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            Model view
+          </button>
+        )}
         <NoticeShelf notices={notices} floating onPauseChange={setNoticePaused} />
       </div>
 
@@ -1169,6 +1192,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
                     onCompact={options.recoverTruncation ? handleCompact : undefined}
                     isCompacting={options.recoverTruncation ? isCompacting : undefined}
                     compactError={options.recoverTruncation ? compactError : undefined}
+                    modelViewOpen={modelViewOpen}
                   />
                 );
                 const noticeLines = notices.length > 0 ? <TranscriptNoticeLines key={`${keyPrefix}-notices-${messageKey}`} notices={notices} /> : null;
@@ -1331,7 +1355,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
               );
             })()}
             {isStreaming && hasStreamingContent && (
-              <StreamingReply store={streamingStore} onCommit={updatePromptAnchor} toolResults={toolResultsMap} modelNames={modelNames} cwd={messageCwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} />
+              <StreamingReply store={streamingStore} onCommit={updatePromptAnchor} toolResults={toolResultsMap} modelNames={modelNames} cwd={messageCwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} modelViewOpen={modelViewOpen} />
             )}
 
             {agentRunning && !hasStreamingContent && (agentPhase || isCompacting) && (
@@ -1521,7 +1545,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
 }
 
 // The reply being streamed: the one part of the chat a chunk re-renders.
-const StreamingReply = memo(function StreamingReply({ store, onCommit, toolResults, modelNames, cwd, onOpenFile, onOpenSubagent }: {
+const StreamingReply = memo(function StreamingReply({ store, onCommit, toolResults, modelNames, cwd, onOpenFile, onOpenSubagent, modelViewOpen }: {
   store: StreamingStore;
   /** Runs after each chunk is in the DOM. */
   onCommit: () => void;
@@ -1530,11 +1554,12 @@ const StreamingReply = memo(function StreamingReply({ store, onCommit, toolResul
   cwd?: string;
   onOpenFile?: (filePath: string, page?: number) => void;
   onOpenSubagent?: (sessionId: string, label: string) => void;
+  modelViewOpen?: boolean;
 }) {
   const message = useStreamingSelector(store, selectStreamingMessage);
   useLayoutEffect(onCommit, [message, onCommit]);
   if (!message) return null;
-  return <MessageView message={message} toolResults={toolResults} isStreaming modelNames={modelNames} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} />;
+  return <MessageView message={message} toolResults={toolResults} isStreaming modelNames={modelNames} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} modelViewOpen={modelViewOpen} />;
 });
 
 // A one-line notice is exactly as tall as its entrance animation pins it, and
