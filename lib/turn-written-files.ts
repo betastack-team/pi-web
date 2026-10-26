@@ -1,6 +1,6 @@
 import type { AssistantContentBlock, ToolResultMessage } from "./types";
 import { resolveLocalFilePath } from "./file-links";
-import { isApplyPatchToolName, isEditToolName, isWriteToolName } from "./tool-names";
+import { isApplyPatchToolName, isEditToolName, isOwcWriteDocToolName, isWriteToolName } from "./tool-names";
 import {
   applyPatchPreviewToFiles,
   applyPatchResultHasFailures,
@@ -16,7 +16,7 @@ export interface WrittenFile {
 }
 
 function isFileWritingToolName(toolName: string): boolean {
-  return isWriteToolName(toolName) || isEditToolName(toolName);
+  return isWriteToolName(toolName) || isEditToolName(toolName) || isOwcWriteDocToolName(toolName);
 }
 
 function readToolPath(input: Record<string, unknown> | undefined): string | null {
@@ -82,8 +82,8 @@ function readApplyPatchPaths(input: Record<string, unknown> | undefined, result:
 /**
  * Collect the distinct files a single assistant turn actually wrote.
  *
- * Every entry is derived from a `write`/`edit`/`apply_patch` tool call whose
- * result arrived and did not error — never from the reply text. A path the
+ * Every entry is derived from a `write`, `edit`, `owc_write_doc`, or `apply_patch` tool call whose
+ * result arrived and did not error. A path the
  * assistant merely mentions in prose is not evidence that any file was
  * touched, so it is not a source here; the tool call is the record of what
  * happened.

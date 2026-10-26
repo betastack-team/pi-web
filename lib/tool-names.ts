@@ -24,6 +24,15 @@ export function isEditToolName(toolName: string): boolean {
     name.includes("replace_editor");
 }
 
+/** Document writer. Separate from `write` so a doc path is not treated as text content. */
+export function isOwcWriteDocToolName(toolName: string): boolean {
+  const name = toolName.toLowerCase();
+  return name === "owc_write_doc" ||
+    name.startsWith("owc_write_doc_") ||
+    name.endsWith(".owc_write_doc") ||
+    name.endsWith("_owc_write_doc");
+}
+
 /** Codex-style patch tools (e.g. the pi-apply-patch extension). */
 export function isApplyPatchToolName(toolName: string): boolean {
   const name = toolName.toLowerCase();
