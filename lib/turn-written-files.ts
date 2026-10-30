@@ -1,6 +1,6 @@
 import type { AssistantContentBlock, ToolResultMessage } from "./types";
 import { resolveLocalFilePath } from "./file-links";
-import { isApplyPatchToolName, isEditToolName, isOwcWriteDocToolName, isWriteToolName } from "./tool-names";
+import { isApplyPatchToolName, isEditToolName, isOwcEditDocToolName, isOwcWriteDocToolName, isWriteToolName } from "./tool-names";
 import {
   applyPatchPreviewToFiles,
   applyPatchResultHasFailures,
@@ -16,12 +16,12 @@ export interface WrittenFile {
 }
 
 function isFileWritingToolName(toolName: string): boolean {
-  return isWriteToolName(toolName) || isEditToolName(toolName) || isOwcWriteDocToolName(toolName);
+  return isWriteToolName(toolName) || isEditToolName(toolName) || isOwcWriteDocToolName(toolName) || isOwcEditDocToolName(toolName);
 }
 
-function readToolPath(input: Record<string, unknown> | undefined): string | null {
+function readToolPath(toolName: string, input: Record<string, unknown> | undefined): string | null {
   if (!input) return null;
-  const value = input.file_path ?? input.path;
+  const value = isOwcEditDocToolName(toolName) ? input.output : input.file_path ?? input.path;
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
@@ -82,7 +82,7 @@ function readApplyPatchPaths(input: Record<string, unknown> | undefined, result:
 /**
  * Collect the distinct files a single assistant turn actually wrote.
  *
- * Every entry is derived from a `write`, `edit`, `owc_write_doc`, or `apply_patch` tool call whose
+ * Every entry is derived from a `write`, `edit`, `owc_write_doc`, `owc_edit_doc`, or `apply_patch` tool call whose
  * result arrived and did not error. A path the
  * assistant merely mentions in prose is not evidence that any file was
  * touched, so it is not a source here; the tool call is the record of what
@@ -107,7 +107,7 @@ export function extractTurnWrittenFiles(
 
     const rawPaths = isApplyPatchToolName(block.toolName)
       ? readApplyPatchPaths(block.input, result)
-      : [readToolPath(block.input)];
+      : [readToolPath(block.toolName, block.input)];
 
     for (const rawPath of rawPaths) {
       if (!rawPath) continue;

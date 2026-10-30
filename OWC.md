@@ -41,6 +41,9 @@ everywhere else.
   It is deliberately not a `write` tool. The chip path comes from
   `input.path`, and `detokenizeInput` never rewrites path keys, so the
   path the chip opens is the one the tool actually wrote to.
+- `owc_edit_doc` gets a chip too. Its chip path comes from `input.output`,
+  the new file, never from `input.path`, the source it read. The tool
+  refuses a token in `output`, so that path is plain too.
 
 ## Invariants
 
@@ -124,7 +127,7 @@ Before trusting a build, confirm each line with specimen values only:
 
 The fork surface is `lib/owc-display.ts`, `lib/owc-model-view.ts`, two
 field additions in `lib/types.ts` and `lib/normalize.ts`, the
-`owc_write_doc` predicate, the upload split, the paste route, the
+`owc_write_doc` and `owc_edit_doc` predicates, the upload split, the paste route, the
 MessageView disclosure, the chat toggle, and one call in each of the
 three session routes, the events route, and `lib/agent-event-stream.ts`.
 Keep new OWC behavior inside the two `owc-*` modules. A conflict in a

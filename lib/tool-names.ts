@@ -33,6 +33,15 @@ export function isOwcWriteDocToolName(toolName: string): boolean {
     name.endsWith("_owc_write_doc");
 }
 
+/** Document editor. It reads `path` and writes a new file at `output`. */
+export function isOwcEditDocToolName(toolName: string): boolean {
+  const name = toolName.toLowerCase();
+  return name === "owc_edit_doc" ||
+    name.startsWith("owc_edit_doc_") ||
+    name.endsWith(".owc_edit_doc") ||
+    name.endsWith("_owc_edit_doc");
+}
+
 /** Codex-style patch tools (e.g. the pi-apply-patch extension). */
 export function isApplyPatchToolName(toolName: string): boolean {
   const name = toolName.toLowerCase();
