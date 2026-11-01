@@ -1,0 +1,142 @@
+/* Card: the textarea card and the controls row (its DOM sibling) read as one white card.
+   The card reserves a strip at its bottom and the controls row is pulled up into it. */
+@media (min-width: 769px) {
+  html[data-theme="paper"] .chat-input-shell [data-ui="composer-card"] {
+    position: relative;
+    background: var(--paper-card) !important;
+    border: 1px solid var(--paper-card-border) !important;
+    border-radius: var(--paper-radius-card) !important;
+    box-shadow: var(--paper-shadow) !important;
+    padding: 16px 18px 52px 20px !important;
+  }
+
+  html[data-theme="paper"] .chat-input-shell [data-ui="composer-card"]:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--paper-card-border)) !important;
+  }
+
+  html[data-theme="paper"] .chat-input-shell .chat-input-controls {
+    position: relative;
+    z-index: 1;
+    margin-top: -46px !important;
+    padding: 0 10px 8px;
+  }
+
+  html[data-theme="paper"] .chat-input-shell:has([data-ui="composer-send"]) .chat-input-controls {
+    padding-right: 52px;
+  }
+
+  html[data-theme="paper"] [data-ui="composer-send"] {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+html[data-theme="paper"] .chat-input-shell [data-ui="composer-card"][style*="rgba(234, 179, 8"] {
+  border-color: rgba(234, 179, 8, 0.45) !important;
+}
+
+html[data-theme="paper"] .chat-input-textarea {
+  font-family: var(--font-ui, inherit);
+  color: var(--text);
+}
+
+html[data-theme="paper"] [data-ui="composer-send"] {
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  gap: 0 !important;
+  border-radius: var(--paper-radius-control) !important;
+  font-size: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="paper"] [data-ui="composer-send"]:disabled {
+  background: var(--bg-selected) !important;
+  color: var(--text-dim) !important;
+}
+
+html[data-theme="paper"] [data-ui="composer-send"]:not(:disabled):hover {
+  background: var(--accent-hover) !important;
+}
+
+html[data-theme="paper"] [data-ui="composer-send"] svg {
+  width: 16px;
+  height: 16px;
+  transform: rotate(-90deg);
+}
+
+html[data-theme="paper"] .chat-input-controls button {
+  font-family: var(--font-ui, inherit);
+  border: 0 !important;
+  border-radius: var(--paper-radius-control) !important;
+  color: var(--text-muted);
+}
+
+html[data-theme="paper"] .chat-input-controls button:hover:not(:disabled) {
+  background: var(--bg-hover) !important;
+}
+
+html[data-theme="paper"] [data-ui="model-name"] {
+  font-family: var(--font-ui, inherit);
+}
+
+html[data-theme="paper"] .new-session-hero-inner {
+  text-align: center;
+}
+
+html[data-theme="paper"] .new-session-brand {
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+html[data-theme="paper"] .new-session-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  opacity: 0.8;
+}
+
+html[data-theme="paper"] .new-session-brand-text {
+  align-items: center;
+  font-family: var(--font-ui, inherit);
+}
+
+html[data-theme="paper"] .new-session-brand-name {
+  font-family: var(--paper-serif);
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--text);
+}
+
+html[data-theme="paper"] .new-session-meta {
+  justify-content: center;
+}
+
+html[data-theme="paper"] .new-session-context {
+  justify-content: center;
+  margin: 0 0 14px;
+}
+
+html[data-theme="paper"] .project-picker.is-inline .project-picker-button {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+}
+
+html[data-theme="paper"] .project-picker.is-inline .project-picker-button:hover,
+html[data-theme="paper"] .project-picker.is-inline .project-picker-button[aria-expanded="true"] {
+  background: var(--bg-hover);
+}
+
+html[data-theme="paper"] .project-picker-name {
+  font-family: var(--font-ui, inherit);
+  color: var(--text-muted);
+}
+
+html[data-theme="paper"] .chat-input-shell {
+  padding-bottom: 18px !important;
+}

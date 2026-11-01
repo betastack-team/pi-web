@@ -2268,6 +2268,7 @@ export const ChatInput = memo(forwardRef<ChatInputHandle, Props>(function ChatIn
             );
           })()}
           <div
+            data-ui="composer-card"
             style={{
               minWidth: 0,
               display: "flex",
@@ -2389,6 +2390,7 @@ export const ChatInput = memo(forwardRef<ChatInputHandle, Props>(function ChatIn
             </div>
           ) : (
             <button
+              data-ui="composer-send"
               onClick={handleSend}
               disabled={!value.trim() && !attachedImages.length}
               title={t("chat.send")}
@@ -2654,7 +2656,7 @@ export const ChatInput = memo(forwardRef<ChatInputHandle, Props>(function ChatIn
               </div>
             )}
             {!isStreaming && onToolPresetChange && (
-              <div ref={toolDropdownRef} style={{ position: "relative" }}>
+              <div ref={toolDropdownRef} data-technical="" style={{ position: "relative" }}>
                 <button
                   onClick={(e) => { if (!isStreaming && !isStrayClick(e)) setToolDropdownOpen((v) => !v); }}
                   disabled={isStreaming}
@@ -2739,7 +2741,7 @@ export const ChatInput = memo(forwardRef<ChatInputHandle, Props>(function ChatIn
             )}
 
             {(!isStreaming || isCompacting) && onCompact && (
-              <div>
+              <div data-technical="">
                 <button
                   onClick={isCompacting ? onAbortCompaction : (e) => { if (!isStrayClick(e)) onCompact(); }}
                   style={{
