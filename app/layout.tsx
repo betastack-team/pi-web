@@ -10,6 +10,7 @@ import "./sidebar.css";
 import "./sidebar-menu.css";
 import "./paper/tokens.css";
 import "./details.css";
+import "./paper/sidebar.css";
 
 const notoSansMono = Noto_Sans_Mono({
   subsets: ["latin", "cyrillic"],

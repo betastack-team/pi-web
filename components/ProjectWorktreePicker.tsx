@@ -553,6 +553,7 @@ export function ProjectWorktreePicker({
           ref={worktreeRef}
           type="button"
           className="project-picker-button"
+          data-technical=""
           title={current ? t("sidebar.worktreePath", { path: current.path }) : t("sidebar.switchWorktree")}
           aria-haspopup="menu"
           aria-expanded={menu?.kind === "worktree"}
@@ -571,7 +572,7 @@ export function ProjectWorktreePicker({
         </button>
       )}
       {!worktrees && stacked && worktreeHint && (
-        <button type="button" aria-disabled="true" tabIndex={-1} title={worktreeHint.title} className="project-picker-button is-inactive">
+        <button type="button" aria-disabled="true" tabIndex={-1} title={worktreeHint.title} className="project-picker-button is-inactive" data-technical="">
           <BranchIcon size={11} className="project-picker-icon" />
           <span className="project-picker-label">{worktreeHint.label}</span>
         </button>

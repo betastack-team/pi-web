@@ -1,0 +1,132 @@
+/* The bottom Models/Skills/Settings row renders in AppShell.tsx; chrome.css styles it. */
+
+html[data-theme="paper"] #session-sidebar {
+  border-right-color: var(--border) !important;
+}
+
+html[data-theme="paper"] .sidebar-header {
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 4px;
+  border-bottom: 0;
+}
+
+html[data-theme="paper"] .sidebar-brand {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html[data-theme="paper"] .sidebar-tab,
+html[data-theme="paper"] .sidebar-new-button,
+html[data-theme="paper"] .sidebar-search-toggle {
+  height: 28px;
+  border: 0;
+  border-radius: var(--paper-radius-control);
+  margin-left: 0;
+}
+
+html[data-theme="paper"] .sidebar-new-button {
+  background: var(--bg-hover);
+  color: var(--text);
+  font-weight: 500;
+}
+
+html[data-theme="paper"] .sidebar-new-button svg {
+  color: var(--accent);
+}
+
+html[data-theme="paper"] .sidebar-new-button:not(:disabled):hover,
+html[data-theme="paper"] .sidebar-search-toggle:hover,
+html[data-theme="paper"] .sidebar-tab:hover {
+  background: var(--bg-selected);
+}
+
+html[data-theme="paper"] .sidebar-search-toggle {
+  padding: 0 8px;
+}
+
+html[data-theme="paper"] .sidebar-tab.is-selected,
+html[data-theme="paper"] .sidebar-search-toggle.is-active {
+  background: var(--bg-selected);
+}
+
+html[data-theme="paper"] .session-tree-session,
+html[data-theme="paper"] .session-tree-group {
+  border-radius: 9px;
+}
+
+html[data-theme="paper"] .session-tree-session.is-selected:not(.is-confirming)::before {
+  content: none;
+}
+
+html[data-theme="paper"] .session-tree-title {
+  font-size: 13px;
+}
+
+html[data-theme="paper"] .session-tree-meta {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+html[data-theme="paper"] .session-tree-group-toggle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+html[data-theme="paper"] .session-tree-group.is-current .session-tree-group-toggle,
+html[data-theme="paper"] .session-tree-group:hover .session-tree-group-toggle {
+  color: var(--text-muted);
+}
+
+html[data-theme="paper"] .session-tree-more-toggle,
+html[data-theme="paper"] .session-tree-footer-button {
+  border-radius: 9px;
+}
+
+html[data-theme="paper"] .sidebar-files-section-label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="paper"] .sidebar-files-section-toggle {
+  border-radius: 9px;
+}
+
+html[data-theme="paper"] .sidebar-files-keys .sidebar-tool-button {
+  border-radius: 8px;
+}
+
+html[data-theme="paper"] .sidebar-files-resize-handle {
+  opacity: 0.5;
+}
+
+html[data-theme="paper"] .project-picker-button {
+  border-color: transparent;
+  border-radius: var(--paper-radius-control);
+  background: var(--bg-hover);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+html[data-theme="paper"] .project-picker.is-inline .project-picker-button {
+  background: transparent;
+}
+
+html[data-theme="paper"] .project-picker-path {
+  font-family: inherit;
+}
+
+html[data-theme="paper"] .sidebar-files-scroll [data-ui="file-row"] {
+  height: 26px !important;
+  border-radius: 8px !important;
+}
+
+html[data-theme="paper"] .sidebar-files-scroll [data-ui="file-name"] {
+  font-family: inherit;
+  font-size: 13px !important;
+}

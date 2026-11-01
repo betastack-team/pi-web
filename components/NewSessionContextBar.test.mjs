@@ -52,7 +52,7 @@ test("the bar shows the project's name and the worktree's branch as two menu but
   assert.doesNotMatch(html, /project-picker-path"><span>\/work\/app</);
   // The worktree: the branch icon (the accent for a linked checkout), the
   // branch cut at its left, a chevron; no "main" note and no count.
-  assert.match(html, /<button type="button" class="project-picker-button" title="Worktree: \/work\/app-worktrees\/feature" aria-haspopup="menu" aria-expanded="false"><svg width="11" height="11"[^>]*class="project-picker-icon is-linked"[\s\S]*?<\/svg><span class="project-picker-path"><span>feature\/x<\/span><\/span><svg width="9" height="9"[^>]*class="project-picker-chevron sidebar-icon-down"[\s\S]*?<\/svg><\/button><\/div><\/div>$/);
+  assert.match(html, /<button type="button" class="project-picker-button" data-technical="" title="Worktree: \/work\/app-worktrees\/feature" aria-haspopup="menu" aria-expanded="false"><svg width="11" height="11"[^>]*class="project-picker-icon is-linked"[\s\S]*?<\/svg><span class="project-picker-path"><span>feature\/x<\/span><\/span><svg width="9" height="9"[^>]*class="project-picker-chevron sidebar-icon-down"[\s\S]*?<\/svg><\/button><\/div><\/div>$/);
   const main = render({ context: { ...context, currentWorktreePath: "/work/app" } });
   assert.match(main, /class="project-picker-icon" aria-hidden="true">[\s\S]*?<span class="project-picker-path"><span>main<\/span><\/span><svg width="9"/);
   assert.doesNotMatch(main, /project-picker-note|is-linked/);

@@ -155,6 +155,7 @@ const GIT_STATUS_COLORS: Record<GitFileStatusKind, string> = {
 function GitStatusBadge({ status, t }: { status: GitFileStatus; t: Translate }) {
   return (
     <span
+      data-technical=""
       title={t(GIT_STATUS_KEYS[status.status])}
       aria-label={t(GIT_STATUS_KEYS[status.status])}
       style={{
@@ -347,6 +348,7 @@ export function TreeNode({
   return (
     <div>
       <div
+        data-ui="file-row"
         onClick={handleClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -398,6 +400,7 @@ export function TreeNode({
           {node.isDir ? <FolderIcon size={14} open={open} /> : getFileIcon(node.name, 14)}
         </span>
         <span
+          data-ui="file-name"
           data-hidden-reason={hidden}
           style={{
             fontSize: 12,
@@ -435,6 +438,7 @@ export function TreeNode({
         )}
         {!hovered && containsGitChanges && (
           <span
+            data-technical=""
             title={t("files.containsChangedFiles")}
             aria-label={t("files.containsChangedFiles")}
             style={{

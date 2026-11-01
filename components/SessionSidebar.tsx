@@ -150,6 +150,7 @@ function ToolbarIconButton({
   controls,
   done,
   className,
+  technical,
   children,
 }: {
   ref?: Ref<HTMLButtonElement>;
@@ -165,6 +166,8 @@ function ToolbarIconButton({
   /** Brief confirmation after an action (refresh). */
   done?: boolean;
   className?: string;
+  /** Developer-only key: hidden at the simple detail level. */
+  technical?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -179,6 +182,7 @@ function ToolbarIconButton({
       aria-expanded={expanded}
       aria-controls={controls}
       className={`sidebar-tool-button${pressed || expanded ? " is-active" : ""}${done ? " is-done" : ""}${className ? ` ${className}` : ""}`}
+      data-technical={technical ? "" : undefined}
     >
       {children}
     </button>
@@ -2686,6 +2690,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       onClick={() => { if (explorerCwd) onOpenTerminal?.(explorerCwd); }}
       disabled={!explorerCwd || !onOpenTerminal}
       title={t("terminal.open")}
+      technical
     >
       <TerminalIcon size={keyIconSize} />
     </ToolbarIconButton>
@@ -2748,6 +2753,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       title={t("sidebar.showIgnoredFiles")}
       pressed={showIgnoredFiles}
       className={className}
+      technical
     >
       <EyeIcon size={keyIconSize} />
     </ToolbarIconButton>
@@ -2770,6 +2776,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
       disabled={changesKeyDisabled}
       title={t("sidebar.changedFiles", { count: changesCount })}
       pressed={!changesKeyDisabled && !changesCollapsed}
+      technical
     >
       <ChangesIcon size={keyIconSize} />
     </ToolbarIconButton>
@@ -3029,7 +3036,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
               <ChevronIcon size={12} strokeWidth={3} className={`session-tree-chevron${filesCollapsed ? "" : " is-open"}`} />
               <span className="sidebar-files-section-label">{t("sidebar.tabFiles")}</span>
               {/* As the pinned section's count; the changes key says it to a screen reader. */}
-              {changedFilesTitle && <span className="sidebar-files-section-count" aria-hidden="true">· {changesCount}</span>}
+              {changedFilesTitle && <span className="sidebar-files-section-count" data-technical="" aria-hidden="true">· {changesCount}</span>}
             </button>
             <div className="sidebar-files-keys" role="group" aria-label={t("sidebar.fileActions")}>
               {terminalButton}
