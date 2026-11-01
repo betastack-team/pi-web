@@ -18,13 +18,14 @@ export function TurnWrittenFiles({ files, onOpenFile }: {
   if (files.length === 0) return null;
 
   return (
-    <div aria-label={t("chat.filesWritten")} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 6 }}>
+    <div data-ui="written-files" aria-label={t("chat.filesWritten")} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 6 }}>
       {files.map(({ filePath }) => {
         const name = getFileName(filePath);
         return (
           <button
             key={filePath}
             type="button"
+            data-ui="written-file-chip"
             title={filePath}
             aria-label={t("chat.openWrittenFile", { name })}
             onClick={() => onOpenFile?.(filePath)}

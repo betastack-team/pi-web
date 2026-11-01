@@ -1,0 +1,92 @@
+html[data-theme="paper"] [data-ui="user-bubble"] {
+  border: none !important;
+  border-radius: 18px !important;
+  padding: 10px 16px !important;
+}
+
+html[data-theme="paper"] [data-ui="assistant-message"] [data-message-text] .markdown-body {
+  line-height: 1.75;
+  color: var(--text);
+}
+
+html[data-theme="paper"] [data-ui="process-group"] {
+  font-family: var(--font-ui);
+  padding: 4px 10px !important;
+  margin-left: -10px;
+  border-radius: var(--paper-radius-control) !important;
+  color: var(--text-muted) !important;
+  transition: background-color 0.12s;
+}
+html[data-theme="paper"] [data-ui="process-group"]:hover {
+  background: var(--bg-hover) !important;
+}
+
+html[data-theme="paper"] [data-ui="tool-card"] {
+  border: 1px solid var(--border) !important;
+  background: var(--paper-card) !important;
+  border-radius: 12px !important;
+  font-family: var(--font-ui);
+}
+html[data-theme="paper"] [data-ui="tool-card"][data-error] {
+  border-color: rgba(220, 38, 38, 0.4) !important;
+  background: rgba(220, 38, 38, 0.04) !important;
+}
+html[data-theme="paper"] [data-ui="tool-name"] {
+  font-family: var(--font-ui) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+}
+html[data-theme="paper"] [data-ui="tool-card"][data-error] [data-ui="tool-name"] {
+  color: #b91c1c !important;
+}
+html[data-theme="paper"] [data-ui="tool-card"] [style*="rgba(34, 197, 94"] {
+  border-color: var(--border) !important;
+}
+html[data-theme="paper"] [data-ui="tool-card"] pre {
+  color: var(--text-muted);
+  background: var(--bg-subtle) !important;
+}
+
+html[data-theme="paper"] [data-ui="thinking-block"] {
+  font-family: var(--font-ui) !important;
+  font-size: 12.5px !important;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 4px 8px !important;
+  margin-left: -8px;
+}
+html[data-theme="paper"] [data-ui="thinking-block"]:hover {
+  background: var(--bg-hover) !important;
+}
+
+html[data-theme="paper"] [data-ui="written-file-chip"] {
+  font-family: var(--font-ui) !important;
+  font-size: 13px !important;
+  padding: 4px 10px !important;
+  border-radius: var(--paper-radius-control) !important;
+  background: var(--paper-card) !important;
+  border: 1px solid var(--paper-card-border) !important;
+  transition: border-color 0.12s;
+}
+html[data-theme="paper"] [data-ui="written-file-chip"]:hover {
+  border-color: var(--accent) !important;
+}
+
+html[data-theme="paper"] .markdown-code-block {
+  border-radius: 12px;
+  background: var(--paper-card);
+  border-color: var(--paper-card-border);
+  box-shadow: none;
+}
+
+html[data-theme="paper"] [data-ui="message-time"] {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+html[data-theme="paper"] [data-ui="user-message"]:hover [data-ui="message-time"],
+html[data-theme="paper"] [data-ui="assistant-message"]:hover [data-ui="message-time"] {
+  opacity: 1;
+}

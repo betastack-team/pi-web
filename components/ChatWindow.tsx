@@ -210,6 +210,7 @@ function ProcessDetailsGroup({ messageCount, toolCallCount, durationMs, cacheMis
     <div style={{ marginBottom: 14 }}>
       <button
         type="button"
+        data-ui="process-group"
         aria-expanded={expanded || reveal}
         aria-label={[t("chat.processDetails"), ...parts, ...(cacheMissText ? [cacheMissText] : [])].join(" · ")}
         onClick={() => setExpanded((v) => !v)}
@@ -1076,6 +1077,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
         {!isEmptyNew && (
           <button
             type="button"
+            data-technical=""
             aria-pressed={modelViewOpen}
             onClick={() => setModelViewOpen((open) => !open)}
             style={{
@@ -1519,7 +1521,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
                 <Image src="/icons/apple-touch-icon.png" width={40} height={40} alt="" priority className="new-session-logo" />
                 <div className="new-session-brand-text">
                   <span className="new-session-brand-name">Pi Web</span>
-                  <span className="new-session-meta">
+                  <span className="new-session-meta" data-technical="">
                     <span>web v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0"}</span>
                     <NewSessionUpdateLink label={(version) => t("appUpdate.releaseNotes", { version })} />
                     <span aria-hidden="true">·</span>

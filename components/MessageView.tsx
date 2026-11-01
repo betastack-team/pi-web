@@ -242,6 +242,7 @@ function ModelViewDisclosure({ body, forcedOpen }: { body: string; forcedOpen: b
   const [localOpen, setLocalOpen] = useState(false);
   return (
     <details
+      data-technical=""
       open={forcedOpen || localOpen}
       onToggle={(event) => {
         if (forcedOpen) {
@@ -479,12 +480,14 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
 
   return (
     <div
+      data-ui="user-message"
       style={{ marginBottom: 16, display: "flex", flexDirection: "column", alignItems: "flex-end" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, maxWidth: "85%" }}>
         <div
+          data-ui="user-bubble"
           style={{
             flex: 1,
             minWidth: 0,
@@ -703,7 +706,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
               )}
             </div>
           )}
-          {time && <span style={{ fontSize: 10, color: "var(--text-dim)" }}>{time}</span>}
+          {time && <span data-ui="message-time" style={{ fontSize: 10, color: "var(--text-dim)" }}>{time}</span>}
         </div>
       )}
     </div>
@@ -901,12 +904,15 @@ function AssistantMessageView({
     <div
       data-message-role="assistant"
       data-entry-id={entryId}
+      data-ui="assistant-message"
       style={{ marginBottom: 16 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Model label */}
       <div
+        data-technical=""
+        data-ui="model-label"
         style={{
           fontSize: 11,
           color: "var(--text-dim)",
@@ -1025,11 +1031,11 @@ function AssistantMessageView({
         <TurnWrittenFiles files={writtenFiles} onOpenFile={onOpenFile} />
       )}
 
-      <div style={{
+      <div data-ui="message-footer" style={{
         display: "flex", alignItems: "center", gap: 8, marginTop: 4,
       }}>
         {(message.usage || turnDurationMs !== undefined) && !isStreaming && (
-          <div style={{ fontSize: 11, color: "var(--text-dim)" }}>
+          <div data-technical="" data-ui="usage-line" style={{ fontSize: 11, color: "var(--text-dim)" }}>
             {[
               message.usage ? formatUsage(message.usage) : null,
               turnDurationMs !== undefined ? t("chat.turnDuration", { time: formatTurnDuration(turnDurationMs) }) : null,
@@ -1070,7 +1076,7 @@ function AssistantMessageView({
           </button>
         )}
         {time && !isStreaming && (
-          <span style={{ fontSize: 10, color: "var(--text-dim)", marginLeft: "auto" }}>{time}</span>
+          <span data-ui="message-time" style={{ fontSize: 10, color: "var(--text-dim)", marginLeft: "auto" }}>{time}</span>
         )}
       </div>
     </div>
@@ -1177,7 +1183,7 @@ export function ThinkingBlock({ block, duration, sessionId, entryId, blockIndex,
   }, [expanded, block.deferred, content, sessionId, entryId, blockIndex]);
 
   return (
-    <div style={{
+    <div data-ui="thinking-block" style={{
       display: "flex", alignItems: "flex-start", gap: 6, minWidth: 0,
       border: "1px solid var(--border)",
       borderRadius: 7,
@@ -1311,6 +1317,8 @@ function ToolCallBlock({ block, result, duration, onOpenSubagent }: { block: Too
 
   return (
     <div
+      data-ui="tool-card"
+      data-error={isError || undefined}
       style={{
         borderRadius: 7,
         overflow: "hidden",
@@ -1339,6 +1347,7 @@ function ToolCallBlock({ block, result, duration, onOpenSubagent }: { block: Too
           }}
         >
           <span
+            data-ui="tool-name"
             title={mcpLabel ? block.toolName : undefined}
             style={{ color: isError ? "#f87171" : "#16a34a", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 11, flexShrink: 0 }}
           >
