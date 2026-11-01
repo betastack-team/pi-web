@@ -1,0 +1,147 @@
+html[data-theme="paper"] [data-ui="topbar"] {
+  background: var(--bg) !important;
+}
+html[data-theme="paper"] [data-ui="topbar-row"] {
+  border-bottom: 1px solid transparent !important;
+  height: calc(48px + env(safe-area-inset-top)) !important;
+  padding-left: 8px;
+  padding-right: 8px;
+  gap: 2px;
+  font-family: var(--font-ui);
+}
+html[data-theme="paper"] [data-ui="topbar-row"] button {
+  border-right: none !important;
+  border-left: none !important;
+  border-top: none !important;
+}
+html[data-theme="paper"] [data-ui="topbar-sidebar-toggle"],
+html[data-theme="paper"] [data-ui="topbar-file-toggle"] {
+  height: 36px !important;
+  border-radius: var(--paper-radius-control) !important;
+  background: none !important;
+  color: var(--text-muted) !important;
+  transition: background-color 0.12s, color 0.12s;
+}
+html[data-theme="paper"] [data-ui="topbar-button"] {
+  height: 36px !important;
+  align-self: center;
+  border-radius: var(--paper-radius-control) !important;
+  font-size: 13px !important;
+}
+html[data-theme="paper"] [data-ui="topbar-sidebar-toggle"]:hover,
+html[data-theme="paper"] [data-ui="topbar-file-toggle"]:hover,
+html[data-theme="paper"] [data-ui="topbar-button"]:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text) !important;
+}
+html[data-theme="paper"] [data-ui="topbar-file-toggle"][aria-expanded="true"] {
+  background: var(--bg-selected) !important;
+  color: var(--text) !important;
+}
+html[data-theme="paper"] [data-ui="topbar-stats"] {
+  font-size: 12px !important;
+  border-radius: var(--paper-radius-control) !important;
+  border-top: none !important;
+}
+
+/* The stats button normally pushes the file toggle to the far right (margin-left: auto);
+   while it is hidden the toggle takes over that job. */
+html[data-details="simple"] [data-ui="topbar-file-toggle"]:not([data-mobile-toolbar-file]) {
+  margin-left: auto !important;
+}
+
+html[data-theme="paper"] [data-ui="sidebar-footer-button"] {
+  font-family: var(--font-ui);
+  font-size: 13px !important;
+  border-radius: var(--paper-radius-control) !important;
+  color: var(--text-muted) !important;
+}
+html[data-theme="paper"] [data-ui="sidebar-footer-button"]:not(:disabled):hover {
+  background: var(--bg-hover) !important;
+  color: var(--text) !important;
+}
+
+html[data-theme="paper"] [data-ui="file-panel"] {
+  background: var(--paper-card) !important;
+  border-left: 1px solid var(--border) !important;
+  font-family: var(--font-ui);
+}
+html[data-theme="paper"] [data-ui="file-panel-tabbar"] {
+  background: var(--paper-card) !important;
+  border-bottom: 1px solid var(--border) !important;
+  height: calc(48px + env(safe-area-inset-top)) !important;
+}
+html[data-theme="paper"] [data-ui="file-panel-tabbar"] > button {
+  border-left: none !important;
+  background: none !important;
+  height: 36px !important;
+  margin-right: 8px;
+  border-radius: var(--paper-radius-control) !important;
+}
+html[data-theme="paper"] [data-ui="file-panel-tabbar"] > button:hover {
+  background: var(--bg-hover) !important;
+}
+html[data-theme="paper"] [data-ui="file-viewer-header"],
+html[data-theme="paper"] .file-viewer-toolbar {
+  background: var(--paper-card) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-family: var(--font-ui);
+  font-size: 12px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+html[data-theme="paper"] [data-ui="file-viewer-header"] > span:first-child,
+html[data-theme="paper"] .file-viewer-path {
+  font-family: var(--font-ui) !important;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+html[data-theme="paper"] .settings-dialog-backdrop {
+  background: rgba(60, 50, 30, 0.28);
+}
+html[data-theme="paper"] .settings-dialog-surface {
+  background: var(--paper-card);
+  border: 1px solid var(--paper-card-border);
+  border-radius: 16px;
+  box-shadow: var(--paper-shadow), 0 24px 60px -20px rgba(60, 50, 30, 0.28);
+  font-family: var(--font-ui);
+}
+html[data-theme="paper"] .settings-dialog-header {
+  border-bottom-color: var(--border);
+}
+html[data-theme="paper"] .settings-dialog-title,
+html[data-theme="paper"] .settings-general-heading {
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+html[data-theme="paper"] .settings-dialog-title {
+  font-size: 16px;
+}
+html[data-theme="paper"] .settings-general-heading {
+  font-size: 14px;
+}
+html[data-theme="paper"] .settings-section-tab,
+html[data-theme="paper"] .settings-dialog-close {
+  border-radius: var(--paper-radius-control);
+}
+
+html[data-theme="paper"] .sidebar-menu {
+  background: var(--paper-card);
+  border-color: var(--paper-card-border);
+  border-radius: 12px;
+  box-shadow: var(--paper-shadow);
+  padding: 6px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+html[data-theme="paper"] .sidebar-menu-item {
+  border-radius: 8px;
+  height: 32px;
+  font-size: 13px;
+}
+
+html[data-theme="paper"] [data-ui="file-panel-tabbar"] > div:first-child,
+html[data-theme="paper"] [data-ui="file-panel-tabbar"] > div:first-child > div {
+  background: transparent !important;
+}

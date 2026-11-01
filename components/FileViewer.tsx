@@ -542,6 +542,7 @@ function ImageViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Pr
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <div
+        data-ui="file-viewer-header"
         style={{
           display: "flex",
           alignItems: "center",
@@ -720,6 +721,7 @@ function AudioViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Pr
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <div
+        data-ui="file-viewer-header"
         style={{
           display: "flex",
           alignItems: "center",
@@ -881,6 +883,7 @@ function VideoViewer({ filePath, cwd, sourceSessionId, watchEnabled = true }: Pr
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <div
+        data-ui="file-viewer-header"
         style={{
           display: "flex",
           alignItems: "center",
@@ -1077,6 +1080,7 @@ function DocumentViewer({ filePath, cwd, sourceSessionId, initialPage, watchEnab
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <div
+        data-ui="file-viewer-header"
         style={{
           display: "flex",
           alignItems: "center",

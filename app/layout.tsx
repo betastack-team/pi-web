@@ -13,6 +13,7 @@ import "./details.css";
 import "./paper/sidebar.css";
 import "./paper/chat.css";
 import "./paper/composer.css";
+import "./paper/chrome.css";
 
 const notoSansMono = Noto_Sans_Mono({
   subsets: ["latin", "cyrillic"],
