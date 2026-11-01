@@ -38,6 +38,8 @@ export const enLocale: LocalePlugin = {
     "settings.resetChatContentWidth": "Reset chat content width",
     "settings.resetChatContentFontSize": "Reset chat & terminal font size",
     "settings.chatContentWidthDescription": "Set the maximum width of messages and the composer.",
+    "settings.themePaper": "Paper",
+    "settings.showTechnicalDetails": "Show technical details",
     "settings.themeLight": "Light",
     "settings.themeDark": "Dark",
     "settings.themeMist": "Mist",

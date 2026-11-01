@@ -9,6 +9,8 @@ export async function checkCodeBackground(page) {
     }
   };
   page.on("console", onConsole);
+  await page.addInitScript(() => localStorage.setItem("pi-theme", "auto"));
+  await page.reload();
   const source = page.getByRole("button", { name: "Source", exact: true });
   await source.click();
   const blocks = page.locator(".markdown-code-block pre");

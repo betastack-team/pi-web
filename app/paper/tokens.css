@@ -1,0 +1,35 @@
+/* Paper: a warm light palette in the spirit of the Claude desktop app. --text, --text-muted and
+   --text-dim clear WCAG AA (4.5:1) on every background below, --text-dim on --bg-selected (the
+   time on a selected session row) at 4.64. --accent clears it everywhere except --bg-selected. */
+html[data-theme="paper"],
+[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #faf9f5;
+  --bg-panel: #f4f2ec;
+  --bg-hover: #ece9df;
+  --bg-selected: #e6e2d6;
+  --border: #e2ddd0;
+  --text: #1f1e1d;
+  --text-muted: #57544c;
+  --text-dim: #66635a;
+  --accent: #a94e2c;
+  --accent-hover: #8e4125;
+  --accent-contrast: #ffffff;
+  --user-bg: #f0ede4;
+  --assistant-bg: #faf9f5;
+  --tool-bg: #f4f2ec;
+  --bg-subtle: rgba(60, 50, 30, 0.045);
+
+  /* Paper-only tokens for the skin files in app/paper/. */
+  --paper-card: #ffffff;
+  --paper-card-border: #e2ddd0;
+  --paper-shadow: 0 1px 2px rgba(60, 50, 30, 0.04), 0 6px 20px -8px rgba(60, 50, 30, 0.12);
+  --paper-radius-card: 20px;
+  --paper-radius-control: 10px;
+  --paper-serif: ui-serif, "New York", "Iowan Old Style", Georgia, "Times New Roman", serif;
+}
+
+/* Paper is the default palette, so its swatch gets a full row under System. */
+.settings-theme-option[data-featured] {
+  grid-column: 1 / -1;
+}
