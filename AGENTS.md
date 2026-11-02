@@ -77,6 +77,7 @@ app/api/
   project-trust/route.ts           GET trust status + project .pi/mcp.json servers (files only) | POST trust, rebuild the cwd's wrappers
   tools/settings/route.ts          GET/PUT defaultTools switches: PowerShell (Windows), Code mode automatic/always; codemode.mode, codemode.inlineBudget
   cache-miss-notices/route.ts      GET/PUT pi's global showCacheMissNotices (Settings › General)
+  tokenizer/route.ts               GET/PUT OWC tokenizer owc | docanonym (Settings › General)
   models/route.ts                  GET ?cwd= { models, modelList, defaultModel, … }
   models/enabled/route.ts          GET/PUT enabledModels switches
   models/default/route.ts          PUT default model / reasoning level for new sessions
