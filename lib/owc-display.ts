@@ -90,12 +90,15 @@ function isResolveVault(value: unknown): value is OwcResolveVault {
   return isRecord(value) && typeof value.resolve === "function";
 }
 
-async function importFile(filePath: string): Promise<Record<string, unknown>> {
-  const loaded: unknown = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ pathToFileURL(filePath).href);
+export async function importFile(filePath: string, cacheKey?: string): Promise<Record<string, unknown>> {
+  const href = pathToFileURL(filePath).href;
+  // A key makes a distinct module URL. Node never drops the first file URL it
+  // imported, and Next does not watch this sibling package.
+  const loaded: unknown = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ (cacheKey ? `${href}?${cacheKey}` : href));
   return isRecord(loaded) ? loaded : {};
 }
 
-function piOwcCandidates(): string[] {
+export function piOwcCandidates(): string[] {
   const candidates = [
     process.env.OWC_PI_OWC_DIR,
     path.join(projectRoot, "pi-owc"),

@@ -619,6 +619,7 @@ export function SettingsPanel({
                   disabled={disabled}
                   title={disabled ? t("settings.projectRequired") : item.label}
                   aria-current={selected ? "page" : undefined}
+                  data-technical={item.id === "plugins" ? "" : undefined}
                   onClick={() => activateSection(item.id)}
                 >
                   <SettingsSectionIcon section={item.id} />

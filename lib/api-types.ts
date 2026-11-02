@@ -901,3 +901,34 @@ export interface PluginToggleResult {
 export interface PluginsBulkResponse extends PluginsResponse {
   results: PluginToggleResult[];
 }
+
+/** One child of the signed-in OneDrive folder, as the Plugins card lists it. */
+export interface SharePointEntry {
+  name: string;
+  kind: string;
+  size: number;
+  folder: boolean;
+}
+
+/** The signed-in person, without the tokens stored beside this account. */
+export interface SharePointAccount {
+  name: string;
+  email: string;
+}
+
+/**
+ * What Plugins renders for SharePoint. Tokens never belong on this object:
+ * the route returns it as the response body.
+ */
+export type SharePointCard =
+  | { state: "unavailable"; reason: string }
+  | { state: "disconnected" }
+  | { state: "signing-in"; authorizeUrl: string; startedAt: number }
+  | {
+    state: "connected";
+    account: SharePointAccount;
+    renews: boolean;
+    folder: { name: string; entries: SharePointEntry[] } | { name: string; error: string };
+  }
+  | { state: "expired"; account: SharePointAccount }
+  | { state: "failed"; message: string };

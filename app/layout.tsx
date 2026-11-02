@@ -14,6 +14,7 @@ import "./paper/sidebar.css";
 import "./paper/chat.css";
 import "./paper/composer.css";
 import "./paper/chrome.css";
+import "./paper/plugins.css";
 
 const notoSansMono = Noto_Sans_Mono({
   subsets: ["latin", "cyrillic"],

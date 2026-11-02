@@ -11,6 +11,7 @@ import { FileViewer } from "./FileViewer";
 import { TabBar, type Tab } from "./TabBar";
 import { openFileTab, saveFileViewerState, saveParkedFileViewerState, switchFileWorkspace, type ParkedFileWorkspace } from "./file-tab-state";
 import { SettingsPanel, SettingsSectionIcon } from "./SettingsPanel";
+import { PluginsPage } from "./PluginsPage";
 import { ProjectTrustDialog, type ProjectTrustFailure } from "./ProjectTrustDialog";
 import { BranchNavigator, hasSessionBranches } from "./BranchNavigator";
 import { SystemPromptPanel } from "./SystemPromptPanel";
@@ -225,6 +226,7 @@ export function AppShell() {
   }, []);
   const [explorerRefreshKey, setExplorerRefreshKey] = useState(0);
   const [settingsSection, setSettingsSection] = useState<SettingsSection | null>(null);
+  const [pluginsOpen, setPluginsOpen] = useState(false);
   const [modelsRefreshKey, setModelsRefreshKey] = useState(0);
   const [projectTrust, setProjectTrust] = useState<ProjectTrustStatus | null>(null);
   const [projectTrustDialogOpen, setProjectTrustDialogOpen] = useState(false);
@@ -843,6 +845,7 @@ export function AppShell() {
   }, [activeCwd, changeFileWorkspace, invalidateWorkspaceRestore, newSessionCwd, router, selectedSession, restoreWorkspaceContext]);
 
   const handleSelectSession = useCallback((session: SessionInfo, isRestore = false, entryId?: string, blockIndex?: number, options?: SelectSessionOptions) => {
+    setPluginsOpen(false);
     setSearchTarget(entryId ? { sessionId: session.id, entryId, blockIndex } : null);
     invalidateWorkspaceRestore();
     const activeDraftKey = activeNewSessionDraftKeyRef.current;
@@ -899,6 +902,7 @@ export function AppShell() {
   }, [activeCwd, changeFileWorkspace, invalidateWorkspaceRestore, router, isMobile, newSessionCwd, selectedSession]);
 
   const handleNewSession = useCallback((sessionId: string, cwd: string, projectKey?: string | null, options?: NewSessionOptions) => {
+    setPluginsOpen(false);
     invalidateWorkspaceRestore();
     const draftKey = `new:${sessionId}:${cwd}`;
     // Leaving a fresh composer for another cwd parks its draft there, as a
@@ -1485,6 +1489,33 @@ export function AppShell() {
             </button>
           );
         })}
+        <button
+          type="button"
+          data-ui="sidebar-footer-button"
+          aria-current={pluginsOpen ? "page" : undefined}
+          onClick={() => {
+            setPluginsOpen(true);
+            if (isMobile) setSidebarOpen(false);
+          }}
+          title={translate("pluginsPage.title")}
+          aria-label={translate("pluginsPage.title")}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            height: 32, padding: 0, background: pluginsOpen ? "var(--bg-selected)" : "none", border: "none",
+            borderRadius: 9, color: pluginsOpen ? "var(--text)" : "var(--text-muted)", cursor: "pointer",
+            fontSize: 12, transition: "background 0.12s, color 0.12s",
+          }}
+          onMouseEnter={(event) => { event.currentTarget.style.background = "var(--bg-hover)"; event.currentTarget.style.color = "var(--text)"; }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.background = pluginsOpen ? "var(--bg-selected)" : "none";
+            event.currentTarget.style.color = pluginsOpen ? "var(--text)" : "var(--text-muted)";
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15.39 4.39a1.5 1.5 0 0 0-2.12 0L12 5.66l-1.27-1.27a1.5 1.5 0 0 0-2.12 2.12L9.88 7.78H4.5A2.5 2.5 0 0 0 2 10.28v.22a1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 1 0 3A1.5 1.5 0 0 0 2 16.5v.22A2.5 2.5 0 0 0 4.5 19.22h.22a1.5 1.5 0 0 0 1.5-1.5 1.5 1.5 0 0 1 3 0 1.5 1.5 0 0 0 1.5 1.5h.22a2.5 2.5 0 0 0 2.5-2.5v-.22a1.5 1.5 0 0 1 0-3 1.5 1.5 0 0 0 0-3V10.5a2.5 2.5 0 0 0-2.5-2.5h-.22l1.27-1.27a1.5 1.5 0 0 0 0-2.12z" />
+          </svg>
+          <span>{translate("pluginsPage.title")}</span>
+        </button>
         <button
           type="button"
           data-ui="sidebar-footer-button"
@@ -2582,8 +2613,9 @@ export function AppShell() {
         {isMobile && renderProjectTrustWarning(true)}
         </div>
 
-        {/* Chat content */}
+        {/* Chat content. Plugins covers it; the chat stays mounted so its event stream survives the visit. */}
         <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+          <div hidden={pluginsOpen} style={{ height: "100%" }}>
           {showChat ? (
             <ChatWindow
               key={sessionKey}
@@ -2667,6 +2699,8 @@ export function AppShell() {
               </div>
             )
           ) : null}
+          </div>
+          {pluginsOpen ? <PluginsPage /> : null}
         </div>
       </div>
 
