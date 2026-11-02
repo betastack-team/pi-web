@@ -16,7 +16,6 @@ export const zhCNLocale: LocalePlugin = {
     "pluginsPage.lede": "Connect a service, then ask the agent to read from it.",
     "pluginsPage.loading": "Checking SharePoint…",
     "pluginsPage.sharePoint.title": "SharePoint",
-    "pluginsPage.sharePoint.description": "Read files from your OneDrive folder “Test Agentic Harness”. Read-only. The agent cannot reach any other folder.",
     "pluginsPage.sharePoint.connect": "Connect",
     "pluginsPage.sharePoint.waiting": "Waiting for Microsoft sign-in…",
     "pluginsPage.sharePoint.cancel": "Cancel",

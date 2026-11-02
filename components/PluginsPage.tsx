@@ -249,10 +249,7 @@ export function PluginsPage({ card: injected }: { card?: SharePointCard }) {
           >
             <div className="plugins-card-head">
               <SharePointMark />
-              <div>
-                <h2 className="plugins-card-title">{t("pluginsPage.sharePoint.title")}</h2>
-                <p className="plugins-card-copy">{t("pluginsPage.sharePoint.description")}</p>
-              </div>
+              <h2 className="plugins-card-title">{t("pluginsPage.sharePoint.title")}</h2>
             </div>
             <div className="plugins-card-body">{body}</div>
           </section>

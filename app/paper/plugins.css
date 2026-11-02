@@ -38,7 +38,7 @@
 .plugins-card-head {
   display: flex;
   gap: 14px;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .plugins-mark {
@@ -50,26 +50,18 @@
 }
 
 .plugins-card-title {
-  margin: 1px 0 0;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
 
-.plugins-card-copy,
 .plugins-lede,
 .plugins-email,
 .plugins-reason,
 .plugins-folder-error,
 .plugins-note {
   overflow-wrap: anywhere;
-}
-
-.plugins-card-copy {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .plugins-card-body {

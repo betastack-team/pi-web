@@ -12,7 +12,6 @@ const { I18nProvider } = await jiti.import("@/hooks/useI18n");
 const { PluginsPage } = await jiti.import("./PluginsPage.tsx");
 
 const h = React.createElement;
-const DESCRIPTION = "Read files from your OneDrive folder “Test Agentic Harness”. Read-only. The agent cannot reach any other folder.";
 const AUTHORIZE = "https://login.example/authorize?client=test";
 
 function decode(html) {
@@ -37,7 +36,7 @@ function assertChrome(html, state) {
   assert.match(html, new RegExp(`data-state="${state}"`));
   const visible = text(html);
   assert.match(visible, /^Plugins Connect a service, then ask the agent to read from it\./);
-  assert.ok(visible.includes(`SharePoint ${DESCRIPTION}`), visible);
+  assert.match(visible, /read from it\. SharePoint /);
 }
 
 test("a disconnected card offers Connect", () => {
