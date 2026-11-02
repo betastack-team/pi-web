@@ -17,7 +17,7 @@ import {
 import { useEnterSendMode, setEnterSendMode } from "@/hooks/useEnterSendMode";
 import { useFilesPlacement, setFilesPlacement } from "@/hooks/useFilesPlacement";
 import { sendAgentCommand } from "@/lib/agent-client";
-import type { ProjectTrustStatus, ToolSettingsResponse } from "@/lib/api-types";
+import type { ProjectTrustStatus, TokenizerCard, ToolSettingsResponse } from "@/lib/api-types";
 import {
   setLastSettingsSection,
   settingsSectionRequiresProject,
@@ -75,6 +75,35 @@ export function SettingsSectionIcon({ section, size = 16, strokeWidth = 1.8 }: {
   return <svg {...common}><path d="M9 7V2M15 7V2M6 13V8a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v5a6 6 0 0 1-12 0ZM12 19v3" /></svg>;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isTokenizerCard(value: unknown): value is TokenizerCard {
+  if (!isRecord(value)) return false;
+  if (value.state === "unavailable") return typeof value.reason === "string";
+  if (value.state !== "ready") return false;
+  const tokenizer = value.tokenizer;
+  const docanonymUrl = value.docanonymUrl;
+  return (tokenizer === "owc" || tokenizer === "docanonym")
+    && (docanonymUrl === null || typeof docanonymUrl === "string")
+    && typeof value.plainHttp === "boolean";
+}
+
+function responseError(value: unknown, status: number): string {
+  if (isRecord(value) && typeof value.error === "string" && value.error.length > 0) return value.error;
+  return `HTTP ${status}`;
+}
+
+function tokenizerDescribedBy(card: TokenizerCard | null): string | undefined {
+  if (card?.state !== "ready") return undefined;
+  const ids = [
+    card.docanonymUrl !== null ? "settings-tokenizer-description" : "settings-tokenizer-missing-url",
+    card.plainHttp ? "settings-tokenizer-plain-http" : "",
+  ].filter((id) => id.length > 0);
+  return ids.length > 0 ? ids.join(" ") : undefined;
+}
+
 function GeneralSettings({ sessionId, onSessionReloaded, quoteSelectionEnabled, onQuoteSelectionChange }: Pick<Props, "sessionId" | "onSessionReloaded" | "quoteSelectionEnabled" | "onQuoteSelectionChange">) {
   const { locale, setLocale, supportedLocales, t } = useI18n();
   const { preference, setThemePreference } = useTheme();
@@ -89,6 +118,9 @@ function GeneralSettings({ sessionId, onSessionReloaded, quoteSelectionEnabled, 
   const [cacheMissNotices, setCacheMissNotices] = useState<boolean | null>(null);
   const [cacheMissNoticesSaving, setCacheMissNoticesSaving] = useState(false);
   const [cacheMissNoticesError, setCacheMissNoticesError] = useState<string | null>(null);
+  const [tokenizer, setTokenizerCard] = useState<TokenizerCard | null>(null);
+  const [tokenizerSaving, setTokenizerSaving] = useState(false);
+  const [tokenizerError, setTokenizerError] = useState<string | null>(null);
   const [pushRegistering, setPushRegistering] = useState(false);
   const [pushStatus, setPushStatus] = useState<{ kind: "ok" | "error"; message: string } | null>(null);
   const [webAuthEnabled, setWebAuthEnabled] = useState(false);
@@ -144,6 +176,41 @@ function GeneralSettings({ sessionId, onSessionReloaded, quoteSelectionEnabled, 
       });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/tokenizer")
+      .then(async (response) => {
+        const data: unknown = await response.json();
+        if (!response.ok || !isTokenizerCard(data)) throw new Error(responseError(data, response.status));
+        if (!cancelled) setTokenizerCard(data);
+      })
+      .catch((cause) => {
+        if (!cancelled) setTokenizerError(cause instanceof Error ? cause.message : String(cause));
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // pi-owc reads the choice on the next tool result, so the open session stays up.
+  const saveTokenizer = async (useDocAnonym: boolean) => {
+    if (tokenizer?.state !== "ready" || tokenizer.docanonymUrl === null) return;
+    setTokenizerSaving(true);
+    setTokenizerError(null);
+    try {
+      const response = await fetch("/api/tokenizer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tokenizer: useDocAnonym ? "docanonym" : "owc" }),
+      });
+      const data: unknown = await response.json();
+      if (!response.ok || !isTokenizerCard(data)) throw new Error(responseError(data, response.status));
+      setTokenizerCard(data);
+    } catch (cause) {
+      setTokenizerError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setTokenizerSaving(false);
+    }
+  };
 
   // pi's showCacheMissNotices (#1265); the open chat is read again to show or drop them.
   const toggleCacheMissNotices = async (enabled: boolean) => {
@@ -392,6 +459,41 @@ function GeneralSettings({ sessionId, onSessionReloaded, quoteSelectionEnabled, 
         </div>
         <p id="settings-cache-miss-notices-description" className="settings-general-description">{t("settings.cacheMissNoticesDescription")}</p>
         {cacheMissNoticesError && <p role="alert" className="settings-general-error">{cacheMissNoticesError}</p>}
+      </section>
+
+      <section className="settings-general-section">
+        <h3 className="settings-general-heading">{t("settings.tokenizer")}</h3>
+        {tokenizer?.state === "unavailable" ? (
+          <p role="alert" className="settings-general-error">{tokenizer.reason}</p>
+        ) : (
+          <>
+            <div className="settings-chat-options">
+              <div className="settings-chat-option settings-chat-switch-option">
+                <span>{t("settings.tokenizerUseDocAnonym")}</span>
+                <ConfigSwitch
+                  checked={tokenizer?.state === "ready" && tokenizer.tokenizer === "docanonym"}
+                  disabled={tokenizer?.state !== "ready" || tokenizer.docanonymUrl === null}
+                  loading={(tokenizer === null && !tokenizerError) || tokenizerSaving}
+                  label={t("settings.tokenizerUseDocAnonym")}
+                  describedBy={tokenizerDescribedBy(tokenizer)}
+                  onChange={(enabled) => void saveTokenizer(enabled)}
+                />
+              </div>
+            </div>
+            {tokenizer?.state === "ready" && tokenizer.docanonymUrl !== null && (
+              <p id="settings-tokenizer-description" className="settings-general-description">
+                {t("settings.tokenizerDescription", { url: tokenizer.docanonymUrl })}
+              </p>
+            )}
+            {tokenizer?.state === "ready" && tokenizer.docanonymUrl === null && (
+              <p id="settings-tokenizer-missing-url" className="settings-general-description">{t("settings.tokenizerMissingUrl")}</p>
+            )}
+            {tokenizer?.state === "ready" && tokenizer.plainHttp && (
+              <p id="settings-tokenizer-plain-http" className="settings-general-description">{t("settings.tokenizerPlainHttp")}</p>
+            )}
+            {tokenizerError && <p role="alert" className="settings-general-error">{tokenizerError}</p>}
+          </>
+        )}
       </section>
 
       <section className="settings-general-section">
