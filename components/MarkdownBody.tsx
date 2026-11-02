@@ -134,7 +134,7 @@ export const MarkdownBody = memo(function MarkdownBody({ children, className, is
         );
       }
       if (href?.startsWith("#")) {
-        // An in-page link: never a second tab of Pi Web.
+        // An in-page link: never a second tab of Betastack Agent.
         return (
           <MarkdownLinkContext.Provider value={true}>
             <a href={href} {...props} onClick={jumpToMarkdownFragment}>

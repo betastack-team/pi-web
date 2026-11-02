@@ -37,7 +37,7 @@ export interface SubagentProfile {
   extensions?: string[];
   loadSkills: boolean;
   loadExtensions: boolean;
-  /** Whether this profile enables Pi Web's codemode tool. Omitted profiles are disabled. */
+  /** Whether this profile enables Betastack Agent's codemode tool. Omitted profiles are disabled. */
   codemode?: SubagentCodemode;
   /** Whether its children connect the servers in `mcp.json`. Omitted profiles do not. */
   mcp?: SubagentMcp;

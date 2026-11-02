@@ -80,7 +80,7 @@ function isPdfFileReadUrl(url: URL): boolean {
  * when the page holding the link has an opaque origin: a PWA's own window
  * opening the session export, or Android Chrome's `data:` placeholder for a PDF
  * it will not render in the viewer's iframe (#1298). Only routes with no side
- * effect whose response cannot run script in the Pi Web origin qualify: the
+ * effect whose response cannot run script in the Betastack Agent origin qualify: the
  * export page (framing denied) and `type=read` of a `.pdf`, which the route
  * always serves as `application/pdf` with nosniff. The opening page cannot
  * read either response.

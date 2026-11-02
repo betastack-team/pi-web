@@ -1014,10 +1014,10 @@ a.session-tree-main {
    as on the old sidebar. Not a cell: no box, no line on its right; its text
    in the chevron column (6px in plus a header toggle's 5px). A click shows
    the versions in the accent for a few seconds. Never cut: New's label
-   gives way first, and on a row too narrow for the versions they take the
-   sidebar's meta size (data-fit 2, which only they reach: "Pi Web" fits
-   beside the two cells at the sidebar's 180px minimum, and at 11px so do
-   the versions with a digit to spare). */
+   gives way first, and on a row too narrow the brand and its versions take
+   a smaller type (data-fit 2): "Betastack Agent" fits beside the two cells
+   at 15px at the sidebar's 260px default and at 10px at its 180px minimum,
+   and at 10px so do the versions with a digit to spare). */
 .sidebar-brand {
   flex: none;
   align-self: center;
@@ -1085,7 +1085,7 @@ a.session-tree-main {
 }
 
 .sidebar-header[data-fit="2"] .sidebar-brand {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .sidebar-header[data-fit="1"] .sidebar-new-label,

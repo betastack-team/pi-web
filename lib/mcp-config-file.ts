@@ -14,22 +14,22 @@ import {
   readResolvedConfigFile,
 } from "./mcp-config-read";
 
-// Pi Web's `mcp.json` writer (ADR 0006, "Writes"). The SDK's editors
+// Betastack Agent's `mcp.json` writer (ADR 0006, "Writes"). The SDK's editors
 // (`dist/extensions/mcp/config.js` add/update/removeMcpServerConfig, which the
 // internals adapter loads) are the semantics this mirrors byte for byte: the
 // file is parsed, the edit applied to the parsed object, and the whole document
 // written back with the indentation of its first indented line ("  " when
 // none) and always a trailing newline; `enabled: true` and `exposure:
 // "codemode"` delete their key (except in a project override, which keeps
-// them), and every key Pi Web does not know is kept.
+// them), and every key Betastack Agent does not know is kept.
 // What the SDK lacks and this adds: a lock (proper-lockfile, plus an
-// in-process queue so Pi Web's own writes never wait on each other's lock), an
+// in-process queue so Betastack Agent's own writes never wait on each other's lock), an
 // atomic write (a temporary file in the real directory, renamed over the real
 // path, so a symbolic link stays a link), the mode (0600 for the global file,
 // which may hold literal secrets; the project file, often committed, keeps
 // its mode, 0644 when new), and a typed refusal that leaves a file it cannot
 // parse untouched. The pi CLI writes without a lock, so the lock serializes
-// Pi Web's writers only. `lib/mcp-config-file.test.mjs` pins the bytes against
+// Betastack Agent's writers only. `lib/mcp-config-file.test.mjs` pins the bytes against
 // the SDK's own editors.
 
 /** Which file to write: the global `mcp.json`, or a project's `.pi/mcp.json` under the link rule. */
@@ -54,7 +54,7 @@ export type McpConfigWriteReason =
   | "name-taken"
   /** A project file that is a symbolic link to nothing. */
   | "link-dangling"
-  /** A project file whose real path is outside the folders Pi Web may read. */
+  /** A project file whose real path is outside the folders Betastack Agent may read. */
   | "link-outside"
   /** Not a regular file. */
   | "not-a-file"
@@ -300,7 +300,7 @@ function serialize<T>(key: string, task: () => Promise<T>): Promise<T> {
 
 /**
  * About three seconds of retries in all. proper-lockfile's own default would
- * back off from one second and double ten times; Pi Web's writes are
+ * back off from one second and double ten times; Betastack Agent's writes are
  * serialized before the lock, so only another process holds it, and only for
  * one short write. A lock found compromised (its folder removed, its refresh
  * failing) is logged: proper-lockfile's default throws from a timer, which

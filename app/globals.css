@@ -1871,7 +1871,7 @@ pre, code {
 }
 
 /* The empty new-session page's header above the composer (ChatWindow), on
-   the composer's left edge: the brand (the logo, "Pi Web" and its versions
+   the composer's left edge: the brand (the logo, "Betastack Agent" and its versions
    line), then the project and worktree row (NewSessionContextBar) right
    above the composer card. Nothing on the right. */
 .new-session-hero-inner {
