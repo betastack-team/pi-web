@@ -932,3 +932,16 @@ export type SharePointCard =
   }
   | { state: "expired"; account: SharePointAccount }
   | { state: "failed"; message: string };
+
+/**
+ * Settings › General's tokenizer switch. `docanonymUrl` is only
+ * `OWC_DOCANONYM_URL`; the route returns this object as the response body.
+ */
+export type TokenizerCard =
+  | {
+    state: "ready";
+    tokenizer: "owc" | "docanonym";
+    docanonymUrl: string | null;
+    plainHttp: boolean;
+  }
+  | { state: "unavailable"; reason: string };
