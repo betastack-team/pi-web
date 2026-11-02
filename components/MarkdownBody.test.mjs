@@ -442,3 +442,21 @@ test("highlightTokens chips tokens in prose, tables and inline code, never in fe
   assert.match(text, /Dear ⟦NAME:XP43H61B⟧, mail ⟦EMAIL:CJ46AEFJ⟧/);
   assert.doesNotMatch(renderMarkdown(markdown, { onOpenFile: undefined }), /class="owc-token"/);
 });
+
+test("highlightTokens never renders media that would fetch, and shows images as their Markdown", () => {
+  const markdown = [
+    "![pixel ⟦NAME:XP43H61B⟧](https://tracker.example/p.png) and ![](take.wav)",
+    "",
+    "<img src=\"https://tracker.example/raw.png\" alt=\"raw\">",
+    "",
+    "<picture><source srcset=\"https://tracker.example/s.png\"><img src=\"https://tracker.example/q.png\"></picture>",
+  ].join("\n");
+  const html = renderMarkdown(markdown, { highlightTokens: true, onOpenFile: undefined });
+  assert.doesNotMatch(html, /<img|<audio|<video|<source|srcset|srcSet/);
+  const text = html.replace(/<[^>]+>/g, "");
+  assert.match(text, /!\[pixel ⟦NAME:XP43H61B⟧\]\(https:\/\/tracker\.example\/p\.png\)/);
+  assert.match(text, /!\[\]\(take\.wav\)/);
+  assert.match(text, /!\[raw\]\(https:\/\/tracker\.example\/raw\.png\)/);
+  assert.match(html, /data-pii="NAME"/);
+  assert.match(renderMarkdown(markdown, { onOpenFile: undefined }), /<img src="https:\/\/tracker\.example\/p\.png"/);
+});

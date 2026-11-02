@@ -60,8 +60,33 @@ function rehypeOwcTokens(): (tree: HastRoot) => void {
   return (tree) => visit(tree);
 }
 
-/** Model-view rendering: the chat pipeline, then colored token chips. */
+function imageMarkdown(node: HastElement): string {
+  const alt = typeof node.properties?.alt === "string" ? node.properties.alt : "";
+  const src = typeof node.properties?.src === "string" ? node.properties.src : "";
+  return `![${alt}](${src})`;
+}
+
+/**
+ * Tool results carry file content nobody vetted, so a model view never fetches
+ * what it names: an image shows as its Markdown text, and a `<source>` (the
+ * other element the sanitizer lets fetch, through `srcset`) is dropped.
+ */
+function rehypeInertMedia(): (tree: HastRoot) => void {
+  const visit = (parent: HastRoot | HastElement): void => {
+    parent.children = parent.children.flatMap((child): HastContent[] => {
+      if (child.type !== "element") return [child];
+      if (child.tagName === "img") return [{ type: "text", value: imageMarkdown(child) }];
+      if (child.tagName === "source") return [];
+      visit(child);
+      return [child];
+    });
+  };
+  return (tree) => visit(tree);
+}
+
+/** Model-view rendering: the chat pipeline, media kept inert, then colored token chips. */
 export const markdownModelViewRehypePlugins: ReactMarkdownOptions["rehypePlugins"] = [
   ...(markdownRehypePlugins ?? []),
+  rehypeInertMedia,
   rehypeOwcTokens,
 ];
