@@ -8,6 +8,7 @@ import {
   SettingsManager,
   type ModelRuntime,
 } from "@earendil-works/pi-coding-agent";
+import { lockLocalGliner } from "./owc-gliner";
 import type { AgentSessionLike } from "./pi-types";
 import {
   subagentNotificationText,
@@ -336,6 +337,7 @@ export function createSubagentController(
   dependencies: SubagentRuntimeDependencies,
 ): SubagentController {
   async function start(request: StartSubagentRequest): Promise<SubagentExecution> {
+    lockLocalGliner();
     const enabled = dependencies.isBuiltInSubagentsEnabled ?? isBuiltInSubagentsEnabled;
     if (!enabled()) throw new Error("Pi Web built-in sub-agents are disabled");
     const parentSessionId = request.parentContext.sessionManager.getSessionId();

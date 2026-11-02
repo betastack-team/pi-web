@@ -97,6 +97,11 @@ Nothing in this fork can mint a token.
 - `OWC_PI_OWC_DIR` points at the pi-owc checkout when it is neither
   `pi-web/pi-owc` nor a sibling `../pi-owc` of the pi-web directory.
 - `OWC_VAULT_HOME` overrides the vault home, as in pi-owc.
+- The local name finder is always on. Server startup and every session set
+  `OWC_GLINER_LOCK=enforce` before the OWC extension loads, so `OWC_GLINER`
+  in `.env` or the shell cannot select `off` or `shadow`. The extension
+  spawns `local-gliner2-pii` and tokenizes the names it finds. A worker
+  that cannot answer redacts that tool result.
 
 ## Trust boundary
 
