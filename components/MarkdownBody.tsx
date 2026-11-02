@@ -7,6 +7,7 @@ import { encodeFilePathForApi } from "@/lib/file-paths";
 import { isAudioPath, isVideoPath } from "@/lib/file-types";
 import { isExternalMarkdownHref, jumpToMarkdownFragment, markdownAppUrlTransform, markdownDocumentRehypePlugins, markdownRehypePlugins, markdownRemarkPlugins, markdownUrlTransform, markdownUserRemarkPlugins, normalizeDisplayMath } from "@/lib/markdown";
 import { splitMarkdownBlocks } from "@/lib/markdown-blocks";
+import { markdownModelViewRehypePlugins } from "@/lib/owc-token-markdown";
 import { ImagePreview } from "./ImagePreview";
 import { MermaidBlock, CodeBlock } from "./MermaidBlock";
 
@@ -22,6 +23,8 @@ interface MarkdownBodyProps {
   onNavigateLink?: (href: string) => void;
   /** Render every line ending as a line break, for text the user typed. */
   keepLineBreaks?: boolean;
+  /** Wrap `⟦CLASS:CODE⟧` tokens in colored chips, for the model view. */
+  highlightTokens?: boolean;
 }
 
 function MarkdownImage({
@@ -80,7 +83,7 @@ const MarkdownBlock = memo(function MarkdownBlock({ markdown, remarkPlugins, url
   );
 });
 
-export const MarkdownBody = memo(function MarkdownBody({ children, className, isStreaming, cwd, onOpenFile, onNavigateLink, keepLineBreaks }: MarkdownBodyProps) {
+export const MarkdownBody = memo(function MarkdownBody({ children, className, isStreaming, cwd, onOpenFile, onNavigateLink, keepLineBreaks, highlightTokens }: MarkdownBodyProps) {
   const normalizedMarkdown = useMemo(() => normalizeDisplayMath(children), [children]);
   // A streaming reply grows by a few characters per chunk; parsing all of it
   // each time made a long reply quadratic. Its finished blocks keep their
@@ -202,7 +205,7 @@ export const MarkdownBody = memo(function MarkdownBody({ children, className, is
           markdown={block}
           remarkPlugins={keepLineBreaks ? markdownUserRemarkPlugins : markdownRemarkPlugins}
           urlTransform={onOpenFile ? markdownUrlTransform : markdownAppUrlTransform}
-          rehypePlugins={onNavigateLink ? markdownDocumentRehypePlugins : markdownRehypePlugins}
+          rehypePlugins={onNavigateLink ? markdownDocumentRehypePlugins : highlightTokens ? markdownModelViewRehypePlugins : markdownRehypePlugins}
           components={components}
         />
       ))}

@@ -417,3 +417,28 @@ test("keeps a block that opens a raw-text tag as it renders without line breaks"
   const list = renderMarkdown("- item <textarea>\n  more\n- two\n  lines", { keepLineBreaks: true });
   assert.match(list, /<li>two<br\/>lines<\/li>/);
 });
+
+test("highlightTokens chips tokens in prose, tables and inline code, never in fenced code", () => {
+  const markdown = [
+    "Dear ⟦NAME:XP43H61B⟧, mail ⟦EMAIL:CJ46AEFJ⟧ about `.owc/cache/⟦NAME:XP43H61B⟧`.",
+    "",
+    "| Who | Where |",
+    "| --- | --- |",
+    "| ⟦NAME:9TDAYSJA⟧ | ⟦ADDR:7K3M9Q2A⟧ |",
+    "",
+    "```text",
+    "| Account name | ⟦NAME:9TDAYSJA⟧ |",
+    "```",
+    "",
+    "<span class=\"owc-token\" data-pii-family=\"person\">forged</span>",
+  ].join("\n");
+  const html = renderMarkdown(markdown, { highlightTokens: true, onOpenFile: undefined });
+  assert.equal((html.match(/class="owc-token"/g) ?? []).length, 5);
+  assert.match(html, /<code class="markdown-inline-code"[^>]*>\.owc\/cache\/<span class="owc-token" data-pii="NAME" data-pii-family="person">/);
+  assert.match(html, /data-pii="ADDR" data-pii-family="place"/);
+  assert.match(html, /\| Account name \| ⟦NAME:9TDAYSJA⟧ \|/);
+  assert.match(html, /<span>forged<\/span>/);
+  const text = html.replace(/<[^>]+>/g, "");
+  assert.match(text, /Dear ⟦NAME:XP43H61B⟧, mail ⟦EMAIL:CJ46AEFJ⟧/);
+  assert.doesNotMatch(renderMarkdown(markdown, { onOpenFile: undefined }), /class="owc-token"/);
+});

@@ -10,6 +10,7 @@ import "./sidebar.css";
 import "./sidebar-menu.css";
 import "./paper/tokens.css";
 import "./details.css";
+import "./model-view.css";
 import "./paper/sidebar.css";
 import "./paper/chat.css";
 import "./paper/composer.css";

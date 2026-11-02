@@ -3,6 +3,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { AgentEventLike } from "./agent-event-wire";
+import { OWC_TOKEN_SOURCE } from "./owc-tokens";
 
 /** Resolve-only view of a pi-owc vault. Display never calls tokenFor. */
 export interface OwcResolveVault {
@@ -26,7 +27,6 @@ const HELD_LIMIT = 16;
 const OPEN_TOKEN = "⟦";
 const CLOSE_TOKEN = "⟧";
 const PARTIAL_TOKEN = /^⟦(?:[A-Z]{0,6}|[A-Z]{2,6}:(?:[0-9A-HJKMNP-TV-Z]{0,8})?)$/;
-const TOKEN_SOURCE = "⟦([A-Z]{2,6}):([0-9A-HJKMNP-TV-Z]{8})⟧";
 const TOKEN_FLAGS = "gu";
 const VAULT_ID_RE = /^[0-9a-f]{32}$/i;
 
@@ -195,7 +195,7 @@ function sameValue(left: unknown, right: unknown): boolean {
 }
 
 function detokenizeTextLocal(text: string, vault: OwcResolveVault): string {
-  const pattern = new RegExp(TOKEN_SOURCE, TOKEN_FLAGS);
+  const pattern = new RegExp(OWC_TOKEN_SOURCE, TOKEN_FLAGS);
   return text.replace(pattern, (token) => vault.resolve(token) ?? token);
 }
 

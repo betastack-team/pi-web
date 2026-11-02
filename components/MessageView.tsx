@@ -22,7 +22,8 @@ import { skillExpansionToCommand } from "@/lib/slash-display";
 import type { SubagentToolDetails } from "@/lib/subagent-extension";
 import { CODEMODE_TOOL_NAME, codemodeCalls, codemodeScript, codemodeScriptPreview, stripCodemodeHeader } from "@/lib/codemode-view";
 import { CodemodeCallList } from "./CodemodeToolView";
-import { modelViewBody } from "@/lib/owc-model-view";
+import { modelViewParts, type ModelViewPart } from "@/lib/owc-model-view";
+import { countTokens, tokenSegments } from "@/lib/owc-tokens";
 import { toolFieldsOfInput, type ToolField } from "@/lib/tool-fields";
 import { mcpToolLabel, prettyMcpResultText } from "@/lib/mcp-tool-display";
 import { streamRateKey, streamRateStart, streamTokensPerSecond, type StreamRateStart } from "@/lib/stream-token-rate";
@@ -233,16 +234,76 @@ interface Props {
   modelViewOpen?: boolean;
 }
 
+function TokenText({ text }: { text: string }) {
+  return (
+    <>
+      {tokenSegments(text).map((segment, index) => segment.kind === "text" ? (
+        <span key={index}>{segment.text}</span>
+      ) : (
+        <span key={index} className="owc-token" data-pii={segment.piiClass} data-pii-family={segment.family}>
+          <span className="owc-token-mark">⟦</span>
+          <span className="owc-token-class">{segment.piiClass}</span>
+          <span className="owc-token-code">:{segment.code}</span>
+          <span className="owc-token-mark">⟧</span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+function ModelViewPartView({ part, variant }: { part: ModelViewPart; variant: "user" | "assistant" }) {
+  const { t } = useI18n();
+  if (part.kind === "text") {
+    return (
+      <SafeMarkdownBody
+        highlightTokens
+        keepLineBreaks={variant === "user"}
+        className={variant === "user" ? "markdown-user-message" : undefined}
+      >
+        {part.text}
+      </SafeMarkdownBody>
+    );
+  }
+  if (part.kind === "thinking") {
+    return (
+      <div data-part="thinking">
+        <div className="model-view-label">{t("modelView.thinking")}</div>
+        <SafeMarkdownBody highlightTokens>{part.text}</SafeMarkdownBody>
+      </div>
+    );
+  }
+  if (part.kind === "toolInput") {
+    return (
+      <div>
+        <div className="model-view-label">{t("modelView.sentTo")} <code>{part.toolName}</code></div>
+        <pre className="model-view-json"><TokenText text={part.json} /></pre>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="model-view-label">{t("modelView.returned")}</div>
+      <SafeMarkdownBody highlightTokens keepLineBreaks>{part.text}</SafeMarkdownBody>
+    </div>
+  );
+}
+
 /**
  * The header toggle forces the disclosure open. A click while that toggle is on
  * cannot stick, because the handler writes `open` back. That forced open is
  * not stored, so turning the header toggle off restores each message's own state.
  */
-function ModelViewDisclosure({ body, forcedOpen }: { body: string; forcedOpen: boolean }) {
+function ModelViewDisclosure({ parts, forcedOpen, variant }: {
+  parts: ModelViewPart[];
+  forcedOpen: boolean;
+  variant: "user" | "assistant";
+}) {
+  const { t } = useI18n();
   const [localOpen, setLocalOpen] = useState(false);
+  const counts = useMemo(() => countTokens(parts), [parts]);
   return (
     <details
-      data-technical=""
+      data-ui="model-view"
       open={forcedOpen || localOpen}
       onToggle={(event) => {
         if (forcedOpen) {
@@ -251,32 +312,28 @@ function ModelViewDisclosure({ body, forcedOpen }: { body: string; forcedOpen: b
         }
         setLocalOpen(event.currentTarget.open);
       }}
-      style={{ marginTop: 6, maxWidth: "100%" }}
     >
-      <summary
-        style={{
-          cursor: "pointer",
-          color: "var(--text-muted)",
-          fontFamily: "var(--font-mono)",
-          fontSize: "calc(11px + var(--chat-font-size-offset, 0px))",
-        }}
-      >
-        Model view — exactly as sent (tokenized)
+      <summary>
+        <svg className="model-view-shield" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z" />
+        </svg>
+        <span>{t("modelView.title")}</span>
+        <span>{t("modelView.exactlyAsSent")}</span>
+        {counts.map((entry) => (
+          <span key={entry.piiClass} className="owc-token-count" data-pii-family={entry.family}>
+            {entry.piiClass} {entry.count}
+          </span>
+        ))}
+        <svg className="model-view-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </summary>
-      <pre
-        style={{
-          margin: "4px 0 0",
-          padding: "8px 10px",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          fontFamily: "var(--font-mono)",
-          color: "var(--text-muted)",
-          fontSize: "calc(12px + var(--chat-font-size-offset, 0px))",
-          lineHeight: 1.5,
-        }}
-      >
-        {body}
-      </pre>
+      <div data-ui="model-view-body" data-variant={variant}>
+        <p className="model-view-caption">{t("modelView.caption")}</p>
+        {parts.map((part, index) => (
+          <ModelViewPartView key={index} part={part} variant={variant} />
+        ))}
+      </div>
     </details>
   );
 }
@@ -469,7 +526,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
   );
   const canEdit = !!entryId && !!onEditContent;
   const canCancelEdit = !!isEditing && !!onCancelEdit;
-  const modelBody = modelViewBody(message);
+  const modelParts = modelViewParts(message);
 
   const copyContent = () => {
     copyText(copyTarget).then(() => {
@@ -573,9 +630,9 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
 
       </div>
 
-      {modelBody !== null && (
+      {modelParts !== null && (
         <div style={{ maxWidth: "85%", alignSelf: "flex-end" }}>
-          <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />
+          <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="user" />
         </div>
       )}
 
@@ -897,8 +954,8 @@ function AssistantMessageView({
     return () => clearInterval(id);
   }, [isStreaming]);
 
-  const modelBody = modelViewBody(message, toolResults, extraRawThinking);
-  if (blocks.length === 0 && !isStreaming && !providerError && !truncated && modelBody === null) return null;
+  const modelParts = modelViewParts(message, toolResults, extraRawThinking);
+  if (blocks.length === 0 && !isStreaming && !providerError && !truncated && modelParts === null) return null;
 
   return (
     <div
@@ -960,7 +1017,7 @@ function AssistantMessageView({
           <BlockView key={originalIndex} block={block} searchTarget={block === searchBlock} toolResults={toolResults} isStreaming={isStreaming} streamingDuration={streamingDurations.get(originalIndex) ?? (block.type === "thinking" ? thinkingDurationFromFile : undefined)} toolCallDurations={toolCallDurations} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} sessionId={sessionId} entryId={entryId} blockIndex={originalIndex} onDeferredRawThinking={rememberRawThinking} />
         ))}
       </div>
-      {modelBody !== null && <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />}
+      {modelParts !== null && <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="assistant" />}
 
       {providerError && (
         <div
@@ -1903,7 +1960,7 @@ function CompactionMessageView({ message, modelViewOpen }: { message: CustomMess
   const tokensBefore = (message.details as { tokensBefore?: unknown } | undefined)?.tokensBefore;
   // pi's showCacheMissNotices (#1265): what the compaction billed, in its card.
   const costNotice = getTranscriptNotices(message).find((notice) => notice.kind === "summary_cost" && notice.source === "compaction");
-  const modelBody = modelViewBody(message);
+  const modelParts = modelViewParts(message);
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -1974,7 +2031,7 @@ function CompactionMessageView({ message, modelViewOpen }: { message: CustomMess
           {expanded && <CompactionSummaryDetails summary={summary} />}
         </div>
       </div>
-      {modelBody !== null && <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />}
+      {modelParts !== null && <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="assistant" />}
     </div>
   );
 }
@@ -2041,7 +2098,7 @@ function CustomMessageView({ message, cwd, onOpenFile, modelViewOpen }: { messag
   const detailsText = hasDetails ? safeJson(message.details) : "";
   const title = formatCustomType(message.customType);
   const time = formatTime(message.timestamp);
-  const modelBody = modelViewBody(message);
+  const modelParts = modelViewParts(message);
 
   const copyContent = () => {
     copyText(text || detailsText).then(() => {
@@ -2197,7 +2254,7 @@ function CustomMessageView({ message, cwd, onOpenFile, modelViewOpen }: { messag
           </>
         )}
       </div>
-      {modelBody !== null && <ModelViewDisclosure body={modelBody} forcedOpen={!!modelViewOpen} />}
+      {modelParts !== null && <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="assistant" />}
     </div>
   );
 }
