@@ -1860,6 +1860,19 @@
   outline-offset: 1px;
 }
 
+.settings-tokenizer-options {
+  flex-wrap: wrap;
+}
+
+.settings-tokenizer-options .settings-send-mode-option:has(input:disabled) {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.settings-tokenizer-options .settings-send-mode-option:has(input:disabled):hover {
+  background: transparent;
+}
+
 .settings-send-mode-label {
   white-space: nowrap;
 }
