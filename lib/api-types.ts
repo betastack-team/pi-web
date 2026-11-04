@@ -932,3 +932,24 @@ export type SharePointCard =
   }
   | { state: "expired"; account: SharePointAccount }
   | { state: "failed"; message: string };
+
+/**
+ * Settings › General's tokenizer choice. `docanonymUrl` is only
+ * `OWC_DOCANONYM_URL`; the route returns this object as the response body.
+ * This is the only TypeScript copy of pi-owc's tokenizer list.
+ */
+export const TOKENIZER_CHOICES = ["owc", "docanonym", "union"] as const;
+export type Tokenizer = (typeof TOKENIZER_CHOICES)[number];
+
+export function isTokenizer(value: unknown): value is Tokenizer {
+  return TOKENIZER_CHOICES.some((choice) => choice === value);
+}
+
+export type TokenizerCard =
+  | {
+    state: "ready";
+    tokenizer: Tokenizer;
+    docanonymUrl: string | null;
+    plainHttp: boolean;
+  }
+  | { state: "unavailable"; reason: string };

@@ -97,6 +97,13 @@ Nothing in this fork can mint a token.
 - `OWC_PI_OWC_DIR` points at the pi-owc checkout when it is neither
   `pi-web/pi-owc` nor a sibling `../pi-owc` of the pi-web directory.
 - `OWC_VAULT_HOME` overrides the vault home, as in pi-owc.
+- Settings › General › Tokenizer writes `tokenizer` (`owc`, `docanonym`, or
+  `union`) through pi-owc `lib/settings.js` into `<root>/.owc/settings.json`.
+  `owc` uses the OWC tokenizer. `docanonym` uses only DocAnonym at
+  `OWC_DOCANONYM_URL`. `union` runs the OWC rules, the header decider, GLiNER
+  and DocAnonym together, so it needs that URL too. pi-owc reads the choice
+  on every tool result. A plain-HTTP address on another machine is warned in
+  that section: the clear text would cross the network unencrypted.
 - The local name finder is always on. Server startup and every session set
   `OWC_GLINER_LOCK=enforce` before the OWC extension loads, so `OWC_GLINER`
   in `.env` or the shell cannot select `off` or `shadow`. The extension
