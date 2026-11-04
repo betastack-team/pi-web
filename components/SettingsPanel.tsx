@@ -17,7 +17,7 @@ import {
 import { useEnterSendMode, setEnterSendMode } from "@/hooks/useEnterSendMode";
 import { useFilesPlacement, setFilesPlacement } from "@/hooks/useFilesPlacement";
 import { sendAgentCommand } from "@/lib/agent-client";
-import type { ProjectTrustStatus, TokenizerCard, ToolSettingsResponse } from "@/lib/api-types";
+import { isTokenizer, TOKENIZER_CHOICES, type ProjectTrustStatus, type Tokenizer, type TokenizerCard, type ToolSettingsResponse } from "@/lib/api-types";
 import {
   setLastSettingsSection,
   settingsSectionRequiresProject,
@@ -83,11 +83,27 @@ function isTokenizerCard(value: unknown): value is TokenizerCard {
   if (!isRecord(value)) return false;
   if (value.state === "unavailable") return typeof value.reason === "string";
   if (value.state !== "ready") return false;
-  const tokenizer = value.tokenizer;
   const docanonymUrl = value.docanonymUrl;
-  return (tokenizer === "owc" || tokenizer === "docanonym")
+  return isTokenizer(value.tokenizer)
     && (docanonymUrl === null || typeof docanonymUrl === "string")
     && typeof value.plainHttp === "boolean";
+}
+
+// docanonym and union need OWC_DOCANONYM_URL, the same split as pi-owc usesDocAnonym.
+function tokenizerNeedsDocAnonymUrl(choice: Tokenizer): boolean {
+  return choice === "docanonym" || choice === "union";
+}
+
+function tokenizerLabel(choice: Tokenizer): string {
+  switch (choice) {
+    case "owc": return "settings.tokenizerOwc";
+    case "docanonym": return "settings.tokenizerUseDocAnonym";
+    case "union": return "settings.tokenizerUnion";
+    default: {
+      const exhaustive: never = choice;
+      return exhaustive;
+    }
+  }
 }
 
 function responseError(value: unknown, status: number): string {
@@ -192,15 +208,17 @@ function GeneralSettings({ sessionId, onSessionReloaded, quoteSelectionEnabled, 
   }, []);
 
   // pi-owc reads the choice on the next tool result, so the open session stays up.
-  const saveTokenizer = async (useDocAnonym: boolean) => {
-    if (tokenizer?.state !== "ready" || tokenizer.docanonymUrl === null) return;
+  const saveTokenizer = async (choice: Tokenizer) => {
+    if (tokenizer?.state !== "ready" || tokenizerSaving) return;
+    if (tokenizerNeedsDocAnonymUrl(choice) && tokenizer.docanonymUrl === null) return;
+    if (tokenizer.tokenizer === choice) return;
     setTokenizerSaving(true);
     setTokenizerError(null);
     try {
       const response = await fetch("/api/tokenizer", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tokenizer: useDocAnonym ? "docanonym" : "owc" }),
+        body: JSON.stringify({ tokenizer: choice }),
       });
       const data: unknown = await response.json();
       if (!response.ok || !isTokenizerCard(data)) throw new Error(responseError(data, response.status));
@@ -462,22 +480,37 @@ function GeneralSettings({ sessionId, onSessionReloaded, quoteSelectionEnabled, 
       </section>
 
       <section className="settings-general-section">
-        <h3 className="settings-general-heading">{t("settings.tokenizer")}</h3>
+        <h3 id="settings-tokenizer-heading" className="settings-general-heading">{t("settings.tokenizer")}</h3>
         {tokenizer?.state === "unavailable" ? (
           <p role="alert" className="settings-general-error">{tokenizer.reason}</p>
         ) : (
           <>
-            <div className="settings-chat-options">
-              <div className="settings-chat-option settings-chat-switch-option">
-                <span>{t("settings.tokenizerUseDocAnonym")}</span>
-                <ConfigSwitch
-                  checked={tokenizer?.state === "ready" && tokenizer.tokenizer === "docanonym"}
-                  disabled={tokenizer?.state !== "ready" || tokenizer.docanonymUrl === null}
-                  loading={(tokenizer === null && !tokenizerError) || tokenizerSaving}
-                  label={t("settings.tokenizerUseDocAnonym")}
-                  describedBy={tokenizerDescribedBy(tokenizer)}
-                  onChange={(enabled) => void saveTokenizer(enabled)}
-                />
+            <div
+              className="settings-chat-options"
+              role="radiogroup"
+              aria-labelledby="settings-tokenizer-heading"
+              aria-describedby={tokenizerDescribedBy(tokenizer)}
+            >
+              <div className="settings-send-mode-options settings-tokenizer-options">
+                {TOKENIZER_CHOICES.map((choice) => {
+                  const disabled = tokenizer?.state !== "ready"
+                    || tokenizerSaving
+                    || (tokenizerNeedsDocAnonymUrl(choice) && tokenizer.docanonymUrl === null);
+                  return (
+                    <label key={choice} className="settings-send-mode-option">
+                      <input
+                        type="radio"
+                        name="tokenizer"
+                        value={choice}
+                        checked={tokenizer?.state === "ready" && tokenizer.tokenizer === choice}
+                        disabled={disabled}
+                        onChange={() => void saveTokenizer(choice)}
+                        className="sr-only"
+                      />
+                      <span className="settings-send-mode-label">{t(tokenizerLabel(choice))}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
             {tokenizer?.state === "ready" && tokenizer.docanonymUrl !== null && (

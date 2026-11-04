@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { setTokenizer, tokenizerCard } from "@/lib/owc-tokenizer";
+import { isTokenizer, TOKENIZER_CHOICES, type Tokenizer } from "@/lib/api-types";
+import { setTokenizer, tokenizerCard, usesDocAnonym } from "@/lib/owc-tokenizer";
 import { hasJsonContentType, isApiRequestAllowed } from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +13,9 @@ function denied(): NextResponse {
   return json({ error: "Untrusted API request" }, 403);
 }
 
-function tokenizerOf(value: unknown): "owc" | "docanonym" | undefined {
+function tokenizerOf(value: unknown): Tokenizer | undefined {
   if (typeof value !== "object" || value === null || !("tokenizer" in value)) return undefined;
-  const tokenizer = value.tokenizer;
-  return tokenizer === "owc" || tokenizer === "docanonym" ? tokenizer : undefined;
+  return isTokenizer(value.tokenizer) ? value.tokenizer : undefined;
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -35,12 +35,17 @@ export async function PUT(request: Request): Promise<NextResponse> {
     return json({ error: "Invalid JSON" }, 400);
   }
   const tokenizer = tokenizerOf(body);
-  if (!tokenizer) return json({ error: "tokenizer must be owc or docanonym" }, 400);
-  if (tokenizer === "docanonym") {
-    const current = await tokenizerCard();
-    if (current.state === "ready" && current.docanonymUrl === null) {
-      return json({ error: "OWC_DOCANONYM_URL is not set" }, 409);
+  if (!tokenizer) return json({ error: `tokenizer must be ${TOKENIZER_CHOICES.join(" or ")}` }, 400);
+  try {
+    if (await usesDocAnonym(tokenizer)) {
+      const current = await tokenizerCard();
+      if (current.state === "ready" && current.docanonymUrl === null) {
+        return json({ error: "OWC_DOCANONYM_URL is not set" }, 409);
+      }
     }
+  } catch {
+    // A failed read is the same unavailable card setTokenizer already returns.
+    return json(await setTokenizer(tokenizer));
   }
   return json(await setTokenizer(tokenizer));
 }

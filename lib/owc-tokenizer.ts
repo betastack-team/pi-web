@@ -1,9 +1,8 @@
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
-import type { TokenizerCard } from "./api-types";
+import { isTokenizer, type Tokenizer, type TokenizerCard } from "./api-types";
 import { importFile, piOwcCandidates } from "./owc-display";
 
-type TokenizerChoice = "owc" | "docanonym";
 type ReadyCard = Extract<TokenizerCard, { state: "ready" }>;
 
 interface TokenizerModules {
@@ -11,6 +10,7 @@ interface TokenizerModules {
   docanonymUrl: string | null;
   readTokenizer: unknown;
   writeTokenizer: unknown;
+  usesDocAnonym: unknown;
   sendsInClear: unknown;
 }
 
@@ -91,6 +91,7 @@ async function loadTokenizer(): Promise<Opened> {
         docanonymUrl: docanonymUrlFrom(env),
         readTokenizer: settings.readTokenizer,
         writeTokenizer: settings.writeTokenizer,
+        usesDocAnonym: settings.usesDocAnonym,
         sendsInClear: client.sendsInClear,
       },
     };
@@ -101,7 +102,7 @@ async function loadTokenizer(): Promise<Opened> {
 
 async function present(modules: TokenizerModules): Promise<ReadyCard> {
   const value = await settle(callFn(modules.readTokenizer, "readTokenizer", [modules.root]));
-  if (value !== "owc" && value !== "docanonym") {
+  if (!isTokenizer(value)) {
     throw new Error("pi-owc readTokenizer returned an unexpected value");
   }
   let plainHttp = false;
@@ -128,12 +129,23 @@ export async function tokenizerCard(): Promise<TokenizerCard> {
   }
 }
 
-export async function setTokenizer(choice: TokenizerChoice): Promise<TokenizerCard> {
+export async function usesDocAnonym(choice: Tokenizer): Promise<boolean> {
+  const opened = await loadTokenizer();
+  if (!opened.ok) {
+    const reason = opened.card.state === "unavailable" ? opened.card.reason : "pi-owc settings module was not found";
+    throw new Error(reason);
+  }
+  const result = await settle(callFn(opened.modules.usesDocAnonym, "usesDocAnonym", [choice]));
+  if (typeof result !== "boolean") throw new Error("pi-owc usesDocAnonym did not return a boolean");
+  return result;
+}
+
+export async function setTokenizer(choice: Tokenizer): Promise<TokenizerCard> {
   const opened = await loadTokenizer();
   if (!opened.ok) return opened.card;
   try {
     const current = await present(opened.modules);
-    if (choice === "docanonym" && current.docanonymUrl === null) return current;
+    if (await usesDocAnonym(choice) && current.docanonymUrl === null) return current;
     await settle(callFn(opened.modules.writeTokenizer, "writeTokenizer", [opened.modules.root, choice]));
     return await present(opened.modules);
   } catch (error) {

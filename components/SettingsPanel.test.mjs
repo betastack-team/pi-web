@@ -22,8 +22,14 @@ test("General shows Tokenizer after Chat at both detail levels", async () => {
   assert.ok(chat !== -1 && tokenizer > chat && sidebar > tokenizer);
   const section = source.slice(tokenizer, sidebar);
   assert.equal(section.includes("data-technical"), false);
-  assert.match(section, /ConfigSwitch/);
-  assert.match(section, /settings\.tokenizerUseDocAnonym/);
+  assert.equal(section.includes("ConfigSwitch"), false);
+  assert.match(section, /role="radiogroup"/);
+  assert.match(section, /type="radio"/);
+  assert.match(section, /TOKENIZER_CHOICES/);
+  assert.match(section, /tokenizerLabel/);
+  assert.match(source, /settings\.tokenizerOwc/);
+  assert.match(source, /settings\.tokenizerUseDocAnonym/);
+  assert.match(source, /settings\.tokenizerUnion/);
   assert.match(section, /settings\.tokenizerDescription/);
   assert.match(section, /settings\.tokenizerPlainHttp/);
   assert.match(section, /settings\.tokenizerMissingUrl/);
