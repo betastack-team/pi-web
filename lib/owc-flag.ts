@@ -2,10 +2,9 @@ import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { importFile, piOwcCandidates } from "./owc-display";
 
-/** Mirrors pi-owc PII_CLASSES; flagValue still validates it, this only shapes the menu. */
-export const FLAG_CLASSES = ["NAME", "SSN", "DOB", "DATE", "MRN", "PLAN", "ACCT", "DL", "EMAIL", "PHONE", "ADDR"] as const;
-export type FlagClass = (typeof FLAG_CLASSES)[number];
-export const FLAG_MAX_CHARS = 200;
+import { FLAG_CLASSES, FLAG_MAX_CHARS, type FlagClass } from "./owc-flag-client";
+
+export { FLAG_CLASSES, FLAG_MAX_CHARS, type FlagClass };
 
 export type FlagOutcome =
   | { ok: true; token: string; sweepable: boolean }
@@ -26,10 +25,6 @@ interface FlagModules {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function isFlagClass(value: unknown): value is FlagClass {
-  return typeof value === "string" && (FLAG_CLASSES as readonly string[]).includes(value);
 }
 
 function isDirectory(dir: string): boolean {
@@ -76,8 +71,8 @@ export async function flagValue(request: FlagRequest): Promise<FlagOutcome> {
   try {
     const modules = await loadFlag(request.cwd);
     if (!modules) return { ok: false, reason: "unavailable" };
-    const { cwd: _cwd, ...rest } = request;
-    return toOutcome(await modules.flagValue(modules.root, rest));
+    const { cls, raw, docRef } = request;
+    return toOutcome(await modules.flagValue(modules.root, { cls, raw, docRef }));
   } catch {
     return { ok: false, reason: "unavailable" };
   }
@@ -94,3 +89,5 @@ export async function requestUnflag(request: { token: string; docRef?: string; c
     return false;
   }
 }
+
+export { isFlagClass } from "./owc-flag-client";
