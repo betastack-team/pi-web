@@ -6,7 +6,7 @@ import { hasJsonContentType, isApiRequestAllowed } from "@/lib/request-security"
 export const dynamic = "force-dynamic";
 
 const TOKEN_ONLY = new RegExp(`^${OWC_TOKEN_SOURCE}$`);
-const REASON_STATUS = { empty: 400, "bad-class": 400, "too-long": 400, unavailable: 503 } as const;
+const REASON_STATUS = { empty: 400, "bad-class": 400, "too-long": 400, "no-project": 400, unavailable: 503 } as const;
 
 function json(body: unknown, status = 200): NextResponse {
   return NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
@@ -49,6 +49,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
   const body = await readBody(request);
   if (body instanceof NextResponse) return body;
   if (typeof body.token !== "string" || !TOKEN_ONLY.test(body.token)) return json({ error: "token must be a token" }, 400);
-  const recorded = await requestUnflag({ token: body.token, docRef: optionalString(body.docRef), cwd: optionalString(body.cwd) });
-  return recorded ? json({ ok: true }) : json({ ok: false, reason: "unavailable" }, 503);
+  const outcome = await requestUnflag({ token: body.token, docRef: optionalString(body.docRef), cwd: optionalString(body.cwd) });
+  if (!outcome.ok) return json({ ok: false, reason: outcome.reason }, REASON_STATUS[outcome.reason]);
+  return json({ ok: true });
 }

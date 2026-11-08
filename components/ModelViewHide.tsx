@@ -48,6 +48,7 @@ export function ModelViewHide({ children, cwd }: { children: ReactNode; cwd?: st
 
   const isToken = TOKEN_ONLY.test(selected);
   const tooLong = selected.length > FLAG_MAX_CHARS;
+  const projectKnown = typeof cwd === "string" && cwd.length > 0;
 
   const submit = useCallback(async () => {
     setBusy(true);
@@ -62,7 +63,8 @@ export function ModelViewHide({ children, cwd }: { children: ReactNode; cwd?: st
       const body: unknown = await response.json().catch(() => null);
       const sweepable = typeof body === "object" && body !== null && "sweepable" in body ? body.sweepable : undefined;
       if (!response.ok || typeof sweepable !== "boolean") {
-        setNotice({ kind: "error", text: t("modelView.hideFailed") });
+        const noProject = typeof body === "object" && body !== null && "reason" in body && body.reason === "no-project";
+        setNotice({ kind: "error", text: t(noProject ? "modelView.hideNoProject" : "modelView.hideFailed") });
         return;
       }
       setNotice({ kind: "ok", text: sweepable ? t("modelView.hidden") : t("modelView.hiddenShort") });
@@ -77,7 +79,7 @@ export function ModelViewHide({ children, cwd }: { children: ReactNode; cwd?: st
   return (
     <div ref={containerRef} data-ui="model-view-hide">
       {children}
-      {selected && !tooLong && (
+      {selected && !tooLong && (isToken || projectKnown) && (
         <div className="model-view-hide-bar" role="group" aria-label={t(isToken ? "modelView.showThis" : "modelView.hideThis")}>
           {!isToken && (
             <select value={cls} onChange={(event) => setCls(event.target.value as FlagClass)} aria-label={t("modelView.hideClass")} disabled={busy}>

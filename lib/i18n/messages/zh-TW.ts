@@ -40,6 +40,7 @@ export const zhTWLocale: LocalePlugin = {
     "modelView.hidden": "Hidden in future reads. The model already saw it once in this session.",
     "modelView.hiddenShort": "Added, but too short to hide automatically; added for review. The model already saw it once in this session.",
     "modelView.hideFailed": "Could not hide this value.",
+    "modelView.hideNoProject": "could not find this session's project; nothing was hidden",
     "modelView.showThis": "Show this",
     "modelView.showRequested": "Request recorded. A person must approve before it is shown again.",
     "modelView.showFailed": "Could not record the request.",
