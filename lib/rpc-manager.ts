@@ -7,6 +7,7 @@ import { resolve } from "path";
 import { isDeepStrictEqual } from "util";
 import { validateAgentImages } from "./image-attachments";
 import { lockLocalGliner } from "./owc-gliner";
+import { hasOwcExtension, owcChannelRefusal } from "./owc-user-channels";
 import { invalidateModelsCache } from "./models-cache";
 import { invalidateModelRuntimeWithExtensions } from "./model-runtime";
 import { resolveVisibleModels, selectInitialModelScope } from "./model-scope";
@@ -834,6 +835,8 @@ export class AgentSessionWrapper {
         throw new Error("Session is being copied to a new session");
       }
 
+      const owcRefusal = owcChannelRefusal(command);
+      if (owcRefusal && hasOwcExtension(this.inner.getAllTools())) throw new Error(owcRefusal);
       if (type === "prompt" || type === "steer" || type === "follow_up") {
         const imageError = validateAgentImages(command.images);
         if (imageError) throw new Error(imageError);
