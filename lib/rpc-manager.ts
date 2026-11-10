@@ -7,7 +7,7 @@ import { resolve } from "path";
 import { isDeepStrictEqual } from "util";
 import { validateAgentImages } from "./image-attachments";
 import { lockLocalGliner } from "./owc-gliner";
-import { CHAT_ONLY_REFUSED_MESSAGE, hasOwcBoundary, NotOwcProjectError, piOwcExtensionDir } from "./owc-boundary";
+import { CHAT_ONLY_REFUSED_MESSAGE, hasOwcBoundary, isInsideOwcRoot, NotOwcProjectError, OUTSIDE_OWC_ROOT_MESSAGE, owcRoot, piOwcExtensionDir } from "./owc-boundary";
 import { invalidateModelsCache } from "./models-cache";
 import { invalidateModelRuntimeWithExtensions } from "./model-runtime";
 import { resolveVisibleModels, selectInitialModelScope } from "./model-scope";
@@ -2533,6 +2533,8 @@ export async function startRpcSession(
   if (chatOnly && !subagentResources) throw new Error(CHAT_ONLY_REFUSED_MESSAGE);
   const piOwcDir = piOwcExtensionDir();
   if (!piOwcDir) throw new NotOwcProjectError();
+  // pi-owc finds its vault from the session folder, so outside the OWC root it would redact every result.
+  if (!isInsideOwcRoot(sessionCwd, owcRoot(piOwcDir))) throw new NotOwcProjectError(OUTSIDE_OWC_ROOT_MESSAGE);
   const finishStartingSession = trackStartingSession(sessionCwd);
   const starting = (async () => {
     // Some extensions access the SDK's global theme even outside the terminal UI.

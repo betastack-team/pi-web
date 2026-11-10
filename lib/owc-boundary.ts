@@ -10,6 +10,8 @@ export const OWC_BOUNDARY_EVENTS = ["input", "tool_call", "tool_result"] as cons
 
 export const NOT_OWC_PROJECT_MESSAGE =
   "This folder is not an OWC project: the OWC privacy extension is not loaded, so the session was closed.";
+export const OUTSIDE_OWC_ROOT_MESSAGE =
+  "This session was saved outside the OWC folder, so it cannot be opened: the OWC privacy extension would redact all of it.";
 export const CHAT_ONLY_REFUSED_MESSAGE =
   "Chat only is not available: it loads no extensions, so the OWC privacy extension would not run.";
 
@@ -28,8 +30,7 @@ export function piOwcExtensionDir(): string | undefined {
 }
 
 /** The OWC root is the folder that holds pi-owc, the same one .pi/settings.json names as "../pi-owc". */
-export function owcRoot(): string | undefined {
-  const dir = piOwcExtensionDir();
+export function owcRoot(dir = piOwcExtensionDir()): string | undefined {
   return dir ? path.dirname(path.resolve(dir)) : undefined;
 }
 
