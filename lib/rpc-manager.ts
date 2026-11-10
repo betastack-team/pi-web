@@ -2621,6 +2621,9 @@ export async function startRpcSession(
               ),
             ],
             extensionsOverride: (base) => preferUserBashExtension(preferPiWebSubagentExtension(base)),
+            // AGENTS.md, CLAUDE.md and prompt templates would reach the model without the OWC tokenizer.
+            noContextFiles: true,
+            noPromptTemplates: true,
           },
       ...(trustReloadOptions ? { resourceLoaderReloadOptions: trustReloadOptions } : {}),
     });
