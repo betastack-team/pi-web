@@ -7,6 +7,7 @@ import { resolve } from "path";
 import { isDeepStrictEqual } from "util";
 import { validateAgentImages } from "./image-attachments";
 import { lockLocalGliner } from "./owc-gliner";
+import { CHAT_ONLY_REFUSED_MESSAGE, hasOwcBoundary, isInsideOwcRoot, NotOwcProjectError, OUTSIDE_OWC_ROOT_MESSAGE, owcRoot, piOwcExtensionDir } from "./owc-boundary";
 import { hasOwcExtension, owcChannelRefusal } from "./owc-user-channels";
 import { invalidateModelsCache } from "./models-cache";
 import { invalidateModelRuntimeWithExtensions } from "./model-runtime";
@@ -1314,6 +1315,11 @@ export class AgentSessionWrapper {
         this.resetExtensionWidgetsForReload();
         this.syncProjectTrust();
         await this.inner.reload();
+        // An extension edited into a broken state reloads without its hooks.
+        if (!hasOwcBoundary(this.inner)) {
+          void this.shutdown();
+          throw new NotOwcProjectError();
+        }
         // pi rebuilds from the tools active before, then extensions adjust them as they start
         // again; carry that result so a tool one switched off during reload stays off.
         this.setActiveToolSelection(activeToolNames);
@@ -2143,6 +2149,10 @@ function registerRpcWrapper(wrapper: AgentSessionWrapper): void {
 const SUBAGENT_CONTROLLER = createSubagentController({
   getSession: (sessionId) => getRegistry().get(sessionId),
   registerSession: (inner, options) => {
+    if (!hasOwcBoundary(inner)) {
+      inner.dispose();
+      throw new NotOwcProjectError();
+    }
     const wrapper = new AgentSessionWrapper(inner, {
       ...(options?.exactSystemPrompt !== undefined
         ? { exactSystemPrompt: options.exactSystemPrompt }
@@ -2257,7 +2267,7 @@ export async function setRpcSessionTools(
 ): Promise<SetRpcSessionToolsResult> {
   const toolNames = requestedToolNames === undefined
     ? undefined
-    : validateSessionToolSelection(requestedToolNames);
+    : requireOwcToolSelection(requestedToolNames);
   const existing = getRpcSession(sessionId);
 
   if (!existing?.isAlive()) {
@@ -2450,6 +2460,13 @@ export function getCompletionNotificationSuppressedRpcSessionIds(): string[] {
   return [...ids];
 }
 
+/** An empty selection is Chat only, which loads no extensions and so no OWC boundary. */
+function requireOwcToolSelection(tools: unknown): string[] {
+  const toolNames = validateSessionToolSelection(tools);
+  if (toolNames.length === 0) throw new Error(CHAT_ONLY_REFUSED_MESSAGE);
+  return toolNames;
+}
+
 /**
  * Get or create an AgentSession for the given session.
  * For new sessions (sessionFile === ""), pi generates its own id.
@@ -2467,7 +2484,7 @@ export async function startRpcSession(
   const { initialModel, allowInitialModelFallback, thinkingLevel } = options;
   const requestedToolNames = options.toolNames === undefined
     ? undefined
-    : validateSessionToolSelection(options.toolNames);
+    : requireOwcToolSelection(options.toolNames);
   const registry = getRegistry();
   const locks = getLocks();
 
@@ -2515,6 +2532,12 @@ export async function startRpcSession(
     subagentResources?.loadExtensions || subagentResources?.loadSkills || subagentResources?.codemode || subagentResources?.mcp,
   );
   const chatOnly = selectedToolNames?.length === 0 && !subagentLoadsResources;
+  // A session file pinned to Chat only before it was refused.
+  if (chatOnly && !subagentResources) throw new Error(CHAT_ONLY_REFUSED_MESSAGE);
+  const piOwcDir = piOwcExtensionDir();
+  if (!piOwcDir) throw new NotOwcProjectError();
+  // pi-owc finds its vault from the session folder, so outside the OWC root it would redact every result.
+  if (!isInsideOwcRoot(sessionCwd, owcRoot(piOwcDir))) throw new NotOwcProjectError(OUTSIDE_OWC_ROOT_MESSAGE);
   const finishStartingSession = trackStartingSession(sessionCwd);
   const starting = (async () => {
     // Some extensions access the SDK's global theme even outside the terminal UI.
@@ -2610,6 +2633,9 @@ export async function startRpcSession(
         : chatOnly
           ? { ...CHAT_ONLY_RESOURCE_LOADER_OPTIONS, extensionFactories: [exactSystemPromptExtension] }
         : {
+            // Loaded explicitly, as bin/owc-pi does with -e, so the boundary does not depend on
+            // project trust or on the folder's .pi/settings.json listing the package.
+            additionalExtensionPaths: [piOwcDir],
             extensionFactories: [
               ...(builtins?.extensions ?? []),
               createReadOnlyMcpPolicyExtension(),
@@ -2724,6 +2750,14 @@ export async function startRpcSession(
         ? subagentToolOptions(subagentResources)
         : toolsOption !== undefined ? { tools: toolsOption } : {}),
     });
+    if (!hasOwcBoundary(inner, piOwcDir)) {
+      try {
+        (builtins?.mcpHost ?? subagentMcp?.mcpHost)?.dispose();
+      } finally {
+        inner.dispose();
+      }
+      throw new NotOwcProjectError();
+    }
 
     // A pinned selection replaces only the coding tools of the SDK's initial loadout, which
     // already holds the extension tools pi activates on registration and whatever

@@ -49,7 +49,7 @@ app/api/
   sessions/ui-state/route.ts       GET/POST sidebar pins, archive, project order and names (set, restore, pin-project, add-projects, move-project, rename-project)
   sessions/[id]/auto-name/route.ts POST generate a session title
   sessions/search/route.ts         GET session search
-  agent/new/route.ts               POST { cwd, type: prompt|ensure_session (start only), message?, toolNames?, provider?, modelId?, thinkingLevel? }
+  agent/new/route.ts               POST { cwd (inside the OWC root), type: prompt|ensure_session (start only), message?, toolNames?, provider?, modelId?, thinkingLevel? }
   agent/[id]/route.ts              GET state (?systemPrompt=0: without the prompt) | POST any command
   agent/[id]/events/route.ts       GET SSE stream
   agent/[id]/lease/route.ts        POST ?holder=<page id> keep the session that page has selected alive (with or without its stream); reply: running, awaitingInput, subagentsActive
@@ -60,7 +60,7 @@ app/api/
   auth/providers/route.ts          GET OAuth and API-key provider lists
   cwd/validate/route.ts            POST validate/select a cwd
   cwd/browse/route.ts              GET browse any readable directory for the cwd picker | POST create child directory
-  default-cwd/route.ts             POST create ~/pi-cwd/YYYYMMDD (local date)
+  default-cwd/route.ts             POST the OWC root (the folder that holds pi-owc)
   home/route.ts                    GET user home directory
   open-in-explorer/route.ts        GET availability | POST open a cwd in the OS file manager (loopback only)
   files/[...path]/route.ts         GET ?type=list|read|download|meta|preview|watch | POST ?type=upload|upload-check|allow-link
@@ -141,7 +141,7 @@ lib/
   file-tree-visibility.ts   which entries the file tree lists (git check-ignore, name-list fallback)
   file-tree-expansion.ts    the file tree's open directories per cwd: page-memory LRU of 20 folders
   display-path.ts           display-only ~ / ./ path shortening for settings panels
-  default-cwd.ts            dated ~/pi-cwd/YYYYMMDD path for "Use default directory"
+  owc-boundary.ts           pi-owc folder and OWC root; hasOwcBoundary(): a session runs only with pi-owc's input, tool_call and tool_result hooks
   worktree.ts               project/worktree resolution and git worktree operations
   draft-store.ts            local draft persistence
   extension-ui-queue.ts     FIFO queues for extension dialogs and custom panels, by request id; isBlockingExtensionUiRequest() (which method a run waits on)

@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
-import { mkdirSync } from "fs";
-import { defaultCwdPath } from "@/lib/default-cwd";
+import { owcRoot } from "@/lib/owc-boundary";
 
 // POST /api/default-cwd
-// Creates ~/pi-cwd/<YYYYMMDD> (local date) if it doesn't exist and returns the path.
+// Returns the OWC root, the one folder tree where sessions load the OWC privacy extension.
 // The client then selects it through /api/cwd/validate like any other directory.
 export async function POST() {
-  try {
-    const dir = defaultCwdPath();
-    mkdirSync(dir, { recursive: true });
-    return NextResponse.json({ cwd: dir });
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
-  }
+  const root = owcRoot();
+  if (!root) return NextResponse.json({ error: "The OWC root was not found next to pi-web." }, { status: 503 });
+  return NextResponse.json({ cwd: root });
 }

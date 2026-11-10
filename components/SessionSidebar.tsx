@@ -250,7 +250,7 @@ export interface SessionSidebarControl {
    * the picker closes without moving the composer.
    */
   openFolderForNewSession(onPicked: (target: NewSessionTarget) => void, returnFocusTo: HTMLElement | null): void;
-  /** "Use default directory": today's ~/pi-cwd folder, validated as the folder picker's, goes to `onPicked`. */
+  /** "Use default directory": the OWC root, validated as the folder picker's, goes to `onPicked`. */
   openDefaultDirectoryForNewSession(onPicked: (target: NewSessionTarget) => void): void;
   /** Lists the worktrees of the sidebar's cwd again (the composer's worktree menu opening). */
   refreshWorktrees(): void;

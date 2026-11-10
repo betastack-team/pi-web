@@ -8,6 +8,7 @@ import { parseNpmSource } from "./npm-source";
 import { writePrivateFileAtomicSync } from "./atomic-file";
 import { isExistingPathWithinRoots } from "./path-security";
 import { disabledBuiltInSubagents } from "./subagent-settings";
+import { isInsideDir, NotOwcProjectError, piOwcExtensionDir } from "./owc-boundary";
 import { PRESET_READ_ONLY } from "./tool-presets";
 import type { SessionEntry, SubagentSessionStatus } from "./types";
 
@@ -923,13 +924,14 @@ export function selectSubagentExtensionTools(
  * built-ins a child with `mcp: on` names (`SUBAGENT_MCP_EXTENSION_PATHS`). The SDK
  * calls the override on every reload, so the scope holds without further wiring.
  */
-export function scopeSubagentExtensions(names: readonly string[]) {
+export function scopeSubagentExtensions(names: readonly string[], piOwcDir?: string) {
   const wanted = new Set(names.map((name) => name.toLowerCase()));
   return (base: LoadExtensionsResult): LoadExtensionsResult => {
     const owners = extensionNameOwners(base.extensions);
     const extensions = base.extensions.filter((extension) => (
       extension.path.startsWith("<inline:")
       || SUBAGENT_MCP_EXTENSION_PATHS.includes(extension.path)
+      || (piOwcDir !== undefined && isInsideDir(extension.resolvedPath, piOwcDir))
       || extensionCandidateNames(extension).some((name) => wanted.has(name) && owners.get(name)?.size === 1)
     ));
     const kept = new Set(extensions.map((extension) => extension.path));
@@ -950,13 +952,18 @@ export function scopeSubagentExtensions(names: readonly string[]) {
  */
 export const SUBAGENT_MCP_EXTENSION_PATHS: readonly string[] = ["builtin:tool-search", "builtin:mcp"];
 
-/** The extension half of a child's resource loader options, shared by spawn and reopen. */
+/**
+ * The extension half of a child's resource loader options, shared by spawn and reopen.
+ * pi-owc loads like a `-e` path, under `noExtensions` too, so a child keeps the OWC boundary.
+ */
 export function subagentExtensionLoaderOptions(resources: { loadExtensions: boolean; extensions?: readonly string[]; mcp?: boolean }) {
+  const piOwcDir = piOwcExtensionDir();
+  if (!piOwcDir) throw new NotOwcProjectError();
   return {
     noExtensions: !resources.loadExtensions,
-    ...(resources.mcp ? { additionalExtensionPaths: [...SUBAGENT_MCP_EXTENSION_PATHS] } : {}),
+    additionalExtensionPaths: [piOwcDir, ...(resources.mcp ? SUBAGENT_MCP_EXTENSION_PATHS : [])],
     ...(resources.loadExtensions && resources.extensions !== undefined
-      ? { extensionsOverride: scopeSubagentExtensions(resources.extensions) }
+      ? { extensionsOverride: scopeSubagentExtensions(resources.extensions, piOwcDir) }
       : {}),
   };
 }
