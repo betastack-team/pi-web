@@ -24,6 +24,7 @@ import { CODEMODE_TOOL_NAME, codemodeCalls, codemodeScript, codemodeScriptPrevie
 import { CodemodeCallList } from "./CodemodeToolView";
 import { modelViewParts, type ModelViewPart } from "@/lib/owc-model-view";
 import { countTokens, tokenSegments } from "@/lib/owc-tokens";
+import { ModelViewHide } from "./ModelViewHide";
 import { toolFieldsOfInput, type ToolField } from "@/lib/tool-fields";
 import { mcpToolLabel, prettyMcpResultText } from "@/lib/mcp-tool-display";
 import { streamRateKey, streamRateStart, streamTokensPerSecond, type StreamRateStart } from "@/lib/stream-token-rate";
@@ -251,7 +252,7 @@ function TokenText({ text }: { text: string }) {
   );
 }
 
-function ModelViewPartView({ part, variant }: { part: ModelViewPart; variant: "user" | "assistant" }) {
+function ModelViewPartView({ part, variant, cwd }: { part: ModelViewPart; variant: "user" | "assistant"; cwd?: string }) {
   const { t } = useI18n();
   if (part.kind === "text") {
     return (
@@ -283,7 +284,9 @@ function ModelViewPartView({ part, variant }: { part: ModelViewPart; variant: "u
   return (
     <div>
       <div className="model-view-label">{t("modelView.returned")}</div>
-      <SafeMarkdownBody highlightTokens keepLineBreaks>{part.text}</SafeMarkdownBody>
+      <ModelViewHide cwd={cwd}>
+        <SafeMarkdownBody highlightTokens keepLineBreaks>{part.text}</SafeMarkdownBody>
+      </ModelViewHide>
     </div>
   );
 }
@@ -293,10 +296,11 @@ function ModelViewPartView({ part, variant }: { part: ModelViewPart; variant: "u
  * cannot stick, because the handler writes `open` back. That forced open is
  * not stored, so turning the header toggle off restores each message's own state.
  */
-function ModelViewDisclosure({ parts, forcedOpen, variant }: {
+function ModelViewDisclosure({ parts, forcedOpen, variant, cwd }: {
   parts: ModelViewPart[];
   forcedOpen: boolean;
   variant: "user" | "assistant";
+  cwd?: string;
 }) {
   const { t } = useI18n();
   const [localOpen, setLocalOpen] = useState(false);
@@ -331,7 +335,7 @@ function ModelViewDisclosure({ parts, forcedOpen, variant }: {
       <div data-ui="model-view-body" data-variant={variant}>
         <p className="model-view-caption">{t("modelView.caption")}</p>
         {parts.map((part, index) => (
-          <ModelViewPartView key={index} part={part} variant={variant} />
+          <ModelViewPartView key={index} part={part} variant={variant} cwd={cwd} />
         ))}
       </div>
     </details>
@@ -632,7 +636,7 @@ function UserMessageView({ message, cwd, onOpenFile, entryId, onFork, forking, o
 
       {modelParts !== null && (
         <div style={{ maxWidth: "85%", alignSelf: "flex-end" }}>
-          <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="user" />
+          <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="user" cwd={cwd} />
         </div>
       )}
 
@@ -1017,7 +1021,7 @@ function AssistantMessageView({
           <BlockView key={originalIndex} block={block} searchTarget={block === searchBlock} toolResults={toolResults} isStreaming={isStreaming} streamingDuration={streamingDurations.get(originalIndex) ?? (block.type === "thinking" ? thinkingDurationFromFile : undefined)} toolCallDurations={toolCallDurations} cwd={cwd} onOpenFile={onOpenFile} onOpenSubagent={onOpenSubagent} sessionId={sessionId} entryId={entryId} blockIndex={originalIndex} onDeferredRawThinking={rememberRawThinking} />
         ))}
       </div>
-      {modelParts !== null && <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="assistant" />}
+      {modelParts !== null && <ModelViewDisclosure parts={modelParts} forcedOpen={!!modelViewOpen} variant="assistant" cwd={cwd} />}
 
       {providerError && (
         <div
