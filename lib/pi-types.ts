@@ -8,6 +8,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { AgentMessage as PiAgentMessage } from "@earendil-works/pi-agent-core";
 import type { ImageContent, TextContent } from "@earendil-works/pi-ai";
+import type { LoadedExtensionLike } from "./owc-boundary";
 
 export interface ContextUsage {
   percent: number | null;
@@ -75,9 +76,11 @@ interface SkillLike {
 interface ResourceLoaderLike {
   getSkills(): { skills: SkillLike[] };
   getAgentsFiles(): { agentsFiles: Array<{ path: string; content: string }> };
+  getExtensions(): { extensions: readonly LoadedExtensionLike[] };
 }
 
 interface ExtensionRunnerLike {
+  getExtensionPaths(): string[];
   getRegisteredCommands(): Array<{
     invocationName: string;
     description?: string;

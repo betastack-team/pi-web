@@ -27,7 +27,8 @@ export function getPreferredToolPreset(
   if (!storage) return CONFIGURED_TOOL_PRESET;
   try {
     const value = storage.getItem(STORAGE_KEY);
-    return isToolPreset(value) ? value : CONFIGURED_TOOL_PRESET;
+    // A Chat only pick stored before it was refused would make every new session fail.
+    return isToolPreset(value) && value !== "none" ? value : CONFIGURED_TOOL_PRESET;
   } catch {
     return CONFIGURED_TOOL_PRESET;
   }

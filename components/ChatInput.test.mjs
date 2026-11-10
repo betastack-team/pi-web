@@ -384,7 +384,7 @@ test("renders the read-only tool preset as the active selection", () => {
   assert.match(html, />read-only<\/span>/);
 });
 
-test("renders the empty tool preset as Chat only", () => {
+test("never offers Chat only, which would start pi without the OWC extension", () => {
   const html = renderToStaticMarkup(
     React.createElement(
       I18nProvider,
@@ -399,8 +399,7 @@ test("renders the empty tool preset as Chat only", () => {
     ),
   );
 
-  assert.match(html, /title="Change tool preset: Chat only"/);
-  assert.match(html, />Chat only<\/span>/);
+  assert.doesNotMatch(html, /Chat only/);
 });
 
 test("renders the compact composer with the standard Send button and no session controls", () => {

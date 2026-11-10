@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { allowFileRoot } from "@/lib/file-access";
 import { invalidateSessionListCache } from "@/lib/session-reader";
 import { startRpcSession } from "@/lib/rpc-manager";
+import { CHAT_ONLY_REFUSED_MESSAGE, isInsideOwcRoot, NOT_OWC_PROJECT_MESSAGE, NotOwcProjectError } from "@/lib/owc-boundary";
 
 const THINKING_LEVELS = new Set<ThinkingLevel>(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
 
@@ -42,6 +43,16 @@ export async function POST(req: Request) {
           ? { code: "prompt_rejected", accepted: false }
           : {}),
       }, { status: 400 });
+    }
+
+    // pi loads the OWC privacy extension and its vault only for the OWC root and folders inside it.
+    if (!isInsideOwcRoot(cwd)) {
+      return NextResponse.json({
+        error: NOT_OWC_PROJECT_MESSAGE,
+        ...(commandType === "prompt"
+          ? { code: "prompt_rejected", accepted: false }
+          : {}),
+      }, { status: 403 });
     }
 
     // Use a one-time key so startRpcSession's lock doesn't conflict with real session ids
@@ -97,11 +108,13 @@ export async function POST(req: Request) {
       thinkingLevel: state.thinkingLevel,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const status = error instanceof NotOwcProjectError ? 403 : message === CHAT_ONLY_REFUSED_MESSAGE ? 400 : 500;
     return NextResponse.json({
-      error: error instanceof Error ? error.message : String(error),
+      error: message,
       ...(commandType === "prompt" && !promptAccepted
         ? { code: "prompt_rejected", accepted: false }
         : {}),
-    }, { status: 500 });
+    }, { status });
   }
 }
