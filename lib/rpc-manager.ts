@@ -8,6 +8,7 @@ import { isDeepStrictEqual } from "util";
 import { validateAgentImages } from "./image-attachments";
 import { lockLocalGliner } from "./owc-gliner";
 import { CHAT_ONLY_REFUSED_MESSAGE, hasOwcBoundary, isInsideOwcRoot, NotOwcProjectError, OUTSIDE_OWC_ROOT_MESSAGE, owcRoot, piOwcExtensionDir } from "./owc-boundary";
+import { hasOwcExtension, owcChannelRefusal } from "./owc-user-channels";
 import { invalidateModelsCache } from "./models-cache";
 import { invalidateModelRuntimeWithExtensions } from "./model-runtime";
 import { resolveVisibleModels, selectInitialModelScope } from "./model-scope";
@@ -835,6 +836,8 @@ export class AgentSessionWrapper {
         throw new Error("Session is being copied to a new session");
       }
 
+      const owcRefusal = owcChannelRefusal(command);
+      if (owcRefusal && hasOwcExtension(this.inner.getAllTools())) throw new Error(owcRefusal);
       if (type === "prompt" || type === "steer" || type === "follow_up") {
         const imageError = validateAgentImages(command.images);
         if (imageError) throw new Error(imageError);
@@ -2647,6 +2650,9 @@ export async function startRpcSession(
               ),
             ],
             extensionsOverride: (base) => preferUserBashExtension(preferPiWebSubagentExtension(base)),
+            // AGENTS.md, CLAUDE.md and prompt templates would reach the model without the OWC tokenizer.
+            noContextFiles: true,
+            noPromptTemplates: true,
           },
       ...(trustReloadOptions ? { resourceLoaderReloadOptions: trustReloadOptions } : {}),
     });
