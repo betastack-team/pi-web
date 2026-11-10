@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { promisify } from "util";
 import { TEXT_PREVIEW_MAX_BYTES } from "./file-types";
+import { isStoredLocally } from "./local-file";
 import type {
   GitFileDiffResponse,
   GitFileStatus,
@@ -90,11 +91,11 @@ async function readTrackedLineStats(
   }
 }
 
-function countUntrackedTextLines(filePath: string): number {
+async function countUntrackedTextLines(filePath: string): Promise<number> {
   try {
-    const stat = fs.lstatSync(filePath);
-    if (!stat.isFile() || stat.size > TEXT_PREVIEW_MAX_BYTES) return 0;
-    const content = fs.readFileSync(filePath);
+    const stat = await fs.promises.lstat(filePath);
+    if (!stat.isFile() || stat.size > TEXT_PREVIEW_MAX_BYTES || !isStoredLocally(stat)) return 0;
+    const content = await fs.promises.readFile(filePath);
     if (hasNullByte(content) || content.length === 0) return 0;
     const text = content.toString("utf8");
     return text.endsWith("\n") ? text.split("\n").length - 1 : text.split("\n").length;
@@ -130,10 +131,10 @@ export async function getGitStatus(cwd: string): Promise<GitStatusResponse> {
       worktreeStatus: entry.worktreeStatus,
     }];
   });
-  const untrackedAdditions = files.reduce(
-    (total, file) => total + (file.status === "untracked" ? countUntrackedTextLines(file.filePath) : 0),
-    0,
-  );
+  let untrackedAdditions = 0;
+  for (const file of files) {
+    if (file.status === "untracked") untrackedAdditions += await countUntrackedTextLines(file.filePath);
+  }
 
   return {
     isGitRepository: true,
@@ -228,13 +229,13 @@ export async function getGitFileDiff(cwd: string, filePath: string): Promise<Git
 
   let stat: fs.Stats;
   try {
-    stat = fs.lstatSync(resolvedFilePath);
+    stat = await fs.promises.lstat(resolvedFilePath);
   } catch {
     return { supported: false };
   }
-  if (!stat.isFile() || stat.size > TEXT_PREVIEW_MAX_BYTES) return { supported: false };
+  if (!stat.isFile() || stat.size > TEXT_PREVIEW_MAX_BYTES || !isStoredLocally(stat)) return { supported: false };
 
-  const currentBuffer = fs.readFileSync(resolvedFilePath);
+  const currentBuffer = await fs.promises.readFile(resolvedFilePath);
   if (hasNullByte(currentBuffer)) return { supported: false };
   const newContent = currentBuffer.toString("utf8");
 
